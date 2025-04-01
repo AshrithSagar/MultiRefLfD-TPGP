@@ -1,0 +1,36 @@
+\section*{Setup}
+
+\( \boldsymbol{\xi} \to \) Cartesian position (2D/3D) of the agent, \( \boldsymbol{\xi} \in \mathbb{R}^2 \) or \( \mathbb{R}^3 \)
+
+\( \varphi \to \) Progress value, \( \varphi \in [0, 1] \)
+
+\( \boldsymbol{x} \to \) State of the system, \( \boldsymbol{x} \coloneq [\boldsymbol{\xi}, \varphi] \)
+
+\( \boldsymbol{d}_n \to \) \( n \)-th demonstration, which is a set of \( l \) sequential states, \( \boldsymbol{d}_n = \{ \boldsymbol{x}_{n, 0}, \ldots, \boldsymbol{x}_{n, l} \} \)
+
+\( N \to \) Total number of demonstrations, \( N \in \mathbb{N} \)
+
+\( \mathcal{D}^{(0)} \to \) Set of all given training demonstrations, in the global (fixed) frame \( \{ 0 \} \), \( \mathcal{D}^{(0)} = \{ {}^{0}\boldsymbol{d}_0, \ldots, {}^{0}\boldsymbol{d}_N \} \)
+
+\textbf{Transformation:}
+For each frame \( m \), the datapoint \( {}^{0}\boldsymbol{x}_{n, i} \) is tranformed from frame \( 0 \) to frame \( m \) by
+\begin{equation}
+    {}^{m}\boldsymbol{x}_{n, i}
+    =
+    \begin{bmatrix}
+        {}^{m}\boldsymbol{t} \\
+        0
+    \end{bmatrix}
+    +
+    {}^{m}\boldsymbol{H} \; {}^{0}\boldsymbol{x}_{n, i}
+    , \quad
+    \text{where }
+    {}^{m}\boldsymbol{H}
+    =
+    \begin{bmatrix}
+        {}^{m}\boldsymbol{R} & \boldsymbol{0} \\
+        \boldsymbol{0}       & 1
+    \end{bmatrix}
+\end{equation}
+
+Inputs to the proposed method \( \to \mathcal{D}^{(0)}, \mathcal{D}^{(1)}, \ldots, \mathcal{D}^{(M)} \)
