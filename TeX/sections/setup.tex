@@ -81,3 +81,29 @@ Local policies are encoded as a dynamical system, which are learnt using Gaussia
     , \qquad
     f(\boldsymbol{x}) = \mathcal{GP}(0, k(\boldsymbol{x}, \boldsymbol{x}'))
 \end{equation}
+
+A variational approximation of the posterior distribution is used,
+\begin{equation}
+    q(\boldsymbol{u}) = \mathcal{N}(\boldsymbol{u} \mid \boldsymbol{m}, \boldsymbol{S}), \quad \text{where } \boldsymbol{u} \to \text{A set of inducing variables in } \boldsymbol{Z}
+\end{equation}
+and the predictive distribution on a test point \( \boldsymbol{X}_* \) is
+\begin{align}
+    p(\boldsymbol{f}_*)
+     & \coloneq
+    \int p(\boldsymbol{f}_* \mid \boldsymbol{u}) \; q(\boldsymbol{u}) \, d\boldsymbol{u}
+    \\
+    \implies
+    p(\boldsymbol{f}_*)
+     & =
+    \mathcal{N} \Big( \boldsymbol{A} \boldsymbol{m}, \boldsymbol{K}(\boldsymbol{X}_*, \boldsymbol{X}_*) + \boldsymbol{A} \big( \boldsymbol{S} - \boldsymbol{K}(\boldsymbol{Z}, \boldsymbol{Z}) \big) \boldsymbol{A}^\top \Big)
+    \\
+    \text{where }
+    \boldsymbol{A}
+     & =
+    \boldsymbol{K}(\boldsymbol{X}_*, \boldsymbol{Z}) \ {\boldsymbol{K}(\boldsymbol{Z}, \boldsymbol{Z})}^{-1}
+\end{align}
+
+\textbf{Frame relevance GP:}
+\begin{equation}
+    \boldsymbol{\alpha} = \mathcal{GP}(0, k(\varphi, \varphi'))
+\end{equation}
