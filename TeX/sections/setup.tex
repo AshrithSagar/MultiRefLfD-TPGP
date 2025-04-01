@@ -57,3 +57,27 @@ Final result \( \to \) A policy, taking inputs as the current positions relative
         TPGP pipeline
     }\label{fig:tpgp-pipeline}
 \end{figure}
+
+\newpage
+\textbf{Alignment of demonstrations:}
+For each \( i \)-th demonstration in \( \mathcal{D}^{(m)} \), find the index \( h \) of the closest point \( {}^{m}\boldsymbol{x}_{i, \cdot} \) to every other element of other demonstrations \( {}^{m}\boldsymbol{x}_{j, \cdot} \), giving
+\begin{equation}
+    {}^{m}\boldsymbol{A}_{ij} = \argmin_{h} \Vert {}^{m}\boldsymbol{x}_{i, h} - {}^{m}\boldsymbol{x}_{j, \cdot} \Vert
+    , \qquad
+    {}^{m}\boldsymbol{B}_{ij} = \varphi_{i, A_{ij}}
+\end{equation}
+
+\textit{Assumption:} In each of the local frames, the closest point in space must have happened at the same (normalized) time.
+Don't use dynamic time warping (DTW).
+
+\( P_{im} \to \) Keypoint progress values for demonstration \( i \) in frame \( m \), \( P_{im} = \operatorname{median}({}^{m}\boldsymbol{B}_{i\cdot}), \quad \forall i \in \{ 0, \ldots, N \} \).
+
+\( \mathcal{D}^{(0*)}, \mathcal{D}^{(1*)}, \ldots, \mathcal{D}^{(M*)} \to \) Aligned (and transformed) demonstration sets.
+
+\textbf{Training of local policies:}
+Local policies are encoded as a dynamical system, which are learnt using Gaussian processes regression with a Matern kernel and zero mean prior.
+\begin{equation}
+    \Delta\boldsymbol{x} = f(\boldsymbol{x})
+    , \qquad
+    f(\boldsymbol{x}) = \mathcal{GP}(0, k(\boldsymbol{x}, \boldsymbol{x}'))
+\end{equation}
