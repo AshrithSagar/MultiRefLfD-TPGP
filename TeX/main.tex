@@ -2,7 +2,7 @@
 
 \usepackage[utf8]{inputenc}
 \usepackage{latexsym, amsfonts, amssymb, amsthm, amsmath}
-\usepackage{enumitem, geometry, graphicx, titlesec}
+\usepackage{enumitem, geometry, graphicx, titlesec, hyperref, cite}
 
 \geometry{
   a4paper,
@@ -10,6 +10,10 @@
   right=1cm,
   top=1cm,
   bottom=2cm,
+}
+\hypersetup{
+  colorlinks=true,
+  citecolor=blue,
 }
 \titlespacing*{\section}{0pt}{2em}{0.5em}
 \titlespacing*{\subsection}{0pt}{1.5em}{0.5em}
@@ -24,5 +28,8 @@
 
 \input{sections/titlepage.tex}
 \input{sections/about.tex}
+
+\bibliographystyle{IEEEtran}
+\bibliography{sections/references.bib}
 
 \end{document}
