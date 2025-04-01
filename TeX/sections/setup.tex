@@ -1,16 +1,18 @@
 \section*{Setup}
 
-\( \boldsymbol{\xi} \to \) Cartesian position (2D/3D) of the agent, \( \boldsymbol{\xi} \in \mathbb{R}^2 \) or \( \mathbb{R}^3 \)
+\( \boldsymbol{\xi} \to \) Cartesian position (2D/3D) of the agent, \( \boldsymbol{\xi} \in \mathbb{R}^2 \) or \( \mathbb{R}^3 \).
 
-\( \varphi \to \) Progress value, \( \varphi \in [0, 1] \)
+\( \varphi \to \) Progress value, \( \varphi \in [0, 1] \).
 
-\( \boldsymbol{x} \to \) State of the system, \( \boldsymbol{x} \coloneq [\boldsymbol{\xi}, \varphi] \)
+\( \boldsymbol{x} \to \) State of the system, \( \boldsymbol{x} \coloneq [\boldsymbol{\xi}, \varphi] \).
 
-\( \boldsymbol{d}_n \to \) \( n \)-th demonstration, which is a set of \( l \) sequential states, \( \boldsymbol{d}_n = \{ \boldsymbol{x}_{n, 0}, \ldots, \boldsymbol{x}_{n, l} \} \)
+\( \boldsymbol{d}_n \to \) \( n \)-th demonstration, which is a set of \( l \) sequential states, \( \boldsymbol{d}_n = \{ \boldsymbol{x}_{n, 0}, \ldots, \boldsymbol{x}_{n, l} \} \).
 
-\( N \to \) Total number of demonstrations, \( N \in \mathbb{N} \)
+\( N \to \) Total number of demonstrations, \( N \in \mathbb{N} \).
 
-\( \mathcal{D}^{(0)} \to \) Set of all given training demonstrations, in the global (fixed) frame \( \{ 0 \} \), \( \mathcal{D}^{(0)} = \{ {}^{0}\boldsymbol{d}_0, \ldots, {}^{0}\boldsymbol{d}_N \} \)
+\( \mathcal{D}^{(0)} \to \) Set of all given training demonstrations, in the global (fixed) frame \( \{ 0 \} \), \( \mathcal{D}^{(0)} = \{ {}^{0}\boldsymbol{d}_0, \ldots, {}^{0}\boldsymbol{d}_N \} \).
+
+\( M \to \) Total number of frames, \( M \in \mathbb{N} \).
 
 \textbf{Transformation:}
 For each frame \( m \), the datapoint \( {}^{0}\boldsymbol{x}_{n, i} \) is tranformed from frame \( 0 \) to frame \( m \) by
@@ -31,6 +33,27 @@ For each frame \( m \), the datapoint \( {}^{0}\boldsymbol{x}_{n, i} \) is tranf
         {}^{m}\boldsymbol{R} & \boldsymbol{0} \\
         \boldsymbol{0}       & 1
     \end{bmatrix}
+    , \quad \forall \
+    \begin{aligned}
+        i & \in \{ 0, \ldots, l \} \\
+        n & \in \{ 0, \ldots, N \} \\
+        m & \in \{ 1, \ldots, M \}
+    \end{aligned}
 \end{equation}
 
-Inputs to the proposed method \( \to \mathcal{D}^{(0)}, \mathcal{D}^{(1)}, \ldots, \mathcal{D}^{(M)} \)
+where \( \big \{ \)
+\( {}^{m}\boldsymbol{t} \to \) Translation vector, \( {}^{m}\boldsymbol{R} \to \) Rotation matrix \( \big \} \) from frame \( 0 \) to frame \( m \).
+
+\( \mathcal{D}^{(m)}, m \in \{ 1, \ldots, M \} \to \) \( m \)-th transformed demonstration set, starting from \( {}^{0}\boldsymbol{d}_n, \forall n \in \{ 0, \ldots, N \} \), and transformed to frame \( m \) using the transformation above, giving \( \mathcal{D}^{(m)} = \{ {}^{m}\boldsymbol{d}_0, \ldots, {}^{m}\boldsymbol{d}_N \} \).
+
+Inputs to the proposed method \( \to \mathcal{D}^{(0)}, \mathcal{D}^{(1)}, \ldots, \mathcal{D}^{(M)} \).
+
+Final result \( \to \) A policy, taking inputs as the current positions relative to each frame and the current progress value \( \varphi \), and outputs a desired change in the state \( \Delta \boldsymbol{x} \).
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.8\textwidth]{figures/images/tpgp-pipeline.jpeg}
+    \caption{
+        TPGP pipeline
+    }\label{fig:tpgp-pipeline}
+\end{figure}
