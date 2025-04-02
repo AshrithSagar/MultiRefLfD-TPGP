@@ -1,4 +1,4 @@
-\section{Setup}
+\section{Setup}\label{sec:setup}
 
 \( \boldsymbol{\xi} \to \) Cartesian position (2D/3D) of the agent, \( \boldsymbol{\xi} \in \mathbb{R}^2 \) or \( \mathbb{R}^3 \).
 
@@ -14,7 +14,7 @@
 
 \( M \to \) Total number of frames, \( M \in \mathbb{N} \).
 
-\subsection{Transformation}
+\subsection{Transformation}\label{sec:transformation}
 
 For each frame \( m \), the datapoint \( {}^{0}\boldsymbol{x}_{n, i} \) is tranformed from frame \( 0 \) to frame \( m \) by
 
@@ -60,7 +60,7 @@ Final result \( \to \) A policy, taking inputs as the current positions relative
     }\label{fig:tpgp-pipeline}
 \end{figure}
 
-\subsection{Alignment of demonstrations}
+\subsection{Alignment of demonstrations}\label{sec:alignment}
 
 For each \( i \)-th demonstration in \( \mathcal{D}^{(m)} \), find the index \( h \) of the closest point \( {}^{m}\boldsymbol{x}_{i, \cdot} \) to every other element of other demonstrations \( {}^{m}\boldsymbol{x}_{j, \cdot} \), giving
 \begin{equation}
@@ -81,7 +81,7 @@ Don't use dynamic time warping (DTW).
 
 \( \mathcal{D}^{(0*)}, \mathcal{D}^{(1*)}, \ldots, \mathcal{D}^{(M*)} \to \) Aligned (and transformed) demonstration sets.
 
-\subsection{Training of local policies}
+\subsection{Training of local policies}\label{sec:local-policies}
 
 Local policies are encoded as a dynamical system, which are learnt using Gaussian processes regression with a Mat\'{e}rn kernel and zero mean prior.
 \begin{equation}
@@ -111,7 +111,7 @@ and the predictive distribution on a test point \( \boldsymbol{X}_* \) is
     \boldsymbol{K}(\boldsymbol{X}_*, \boldsymbol{Z}) \ {\boldsymbol{K}(\boldsymbol{Z}, \boldsymbol{Z})}^{-1}
 \end{align}
 
-\subsubsection{Mat\'{e}rn kernel}
+\subsubsection{Mat\'{e}rn kernel}\label{sec:matern-kernel}
 
 \begin{equation}
     k(x_i, x_j)
@@ -123,7 +123,7 @@ and the predictive distribution on a test point \( \boldsymbol{X}_* \) is
 
 \( \nu \to \infty \implies \) RBF kernel, \( \nu = 1/2 \implies \) Absolute exponential kernel.
 
-\subsection{Frame relevance GP}
+\subsection{Frame relevance GP}\label{sec:frame-relevance-gp}
 
 \begin{equation}
     \boldsymbol{\alpha} \sim \mathcal{GP}(0, k(\varphi, \varphi'))
