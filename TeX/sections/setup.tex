@@ -65,12 +65,17 @@ For each \( i \)-th demonstration in \( \mathcal{D}^{(m)} \), find the index \( 
     {}^{m}\boldsymbol{A}_{ij} = \argmin_{h} \Vert {}^{m}\boldsymbol{x}_{i, h} - {}^{m}\boldsymbol{x}_{j, \cdot} \Vert
     , \qquad
     {}^{m}\boldsymbol{B}_{ij} = \varphi_{i, A_{ij}}
+    , \qquad
+    i, j \in \{ 0, \ldots, N \}
 \end{equation}
 
 \textit{Assumption:} In each of the local frames, the closest point in space must have happened at the same (normalized) time.
 Don't use dynamic time warping (DTW).
 
-\( P_{im} \to \) Keypoint progress values for demonstration \( i \) in frame \( m \), \( P_{im} = \operatorname{median}({}^{m}\boldsymbol{B}_{i\cdot}), \quad \forall i \in \{ 0, \ldots, N \} \).
+\( P_{im} \to \) Keypoint progress values for demonstration \( i \) in frame \( m \).
+\begin{equation}
+    P_{im} = \operatorname{median}({}^{m}\boldsymbol{B}_{i\cdot}), \quad \forall i \in \{ 0, \ldots, N \}, \forall m \in \{ 1, \ldots, M \}
+\end{equation}
 
 \( \mathcal{D}^{(0*)}, \mathcal{D}^{(1*)}, \ldots, \mathcal{D}^{(M*)} \to \) Aligned (and transformed) demonstration sets.
 
