@@ -1,4 +1,4 @@
-\section*{Setup}
+\section{Setup}
 
 \( \boldsymbol{\xi} \to \) Cartesian position (2D/3D) of the agent, \( \boldsymbol{\xi} \in \mathbb{R}^2 \) or \( \mathbb{R}^3 \).
 
@@ -14,8 +14,10 @@
 
 \( M \to \) Total number of frames, \( M \in \mathbb{N} \).
 
-\textbf{Transformation:}
+\subsection{Transformation}
+
 For each frame \( m \), the datapoint \( {}^{0}\boldsymbol{x}_{n, i} \) is tranformed from frame \( 0 \) to frame \( m \) by
+
 \begin{equation}
     {}^{m}\boldsymbol{x}_{n, i}
     =
@@ -58,8 +60,8 @@ Final result \( \to \) A policy, taking inputs as the current positions relative
     }\label{fig:tpgp-pipeline}
 \end{figure}
 
-\newpage
-\textbf{Alignment of demonstrations:}
+\subsection{Alignment of demonstrations}
+
 For each \( i \)-th demonstration in \( \mathcal{D}^{(m)} \), find the index \( h \) of the closest point \( {}^{m}\boldsymbol{x}_{i, \cdot} \) to every other element of other demonstrations \( {}^{m}\boldsymbol{x}_{j, \cdot} \), giving
 \begin{equation}
     {}^{m}\boldsymbol{A}_{ij} = \argmin_{h} \Vert {}^{m}\boldsymbol{x}_{i, h} - {}^{m}\boldsymbol{x}_{j, \cdot} \Vert
@@ -79,7 +81,8 @@ Don't use dynamic time warping (DTW).
 
 \( \mathcal{D}^{(0*)}, \mathcal{D}^{(1*)}, \ldots, \mathcal{D}^{(M*)} \to \) Aligned (and transformed) demonstration sets.
 
-\textbf{Training of local policies:}
+\subsection{Training of local policies}
+
 Local policies are encoded as a dynamical system, which are learnt using Gaussian processes regression with a Matern kernel and zero mean prior.
 \begin{equation}
     \Delta\boldsymbol{x} = f(\boldsymbol{x})
@@ -108,7 +111,32 @@ and the predictive distribution on a test point \( \boldsymbol{X}_* \) is
     \boldsymbol{K}(\boldsymbol{X}_*, \boldsymbol{Z}) \ {\boldsymbol{K}(\boldsymbol{Z}, \boldsymbol{Z})}^{-1}
 \end{align}
 
-\textbf{Frame relevance GP:}
+\subsection{Frame relevance GP}
+
 \begin{equation}
     \boldsymbol{\alpha} = \mathcal{GP}(0, k(\varphi, \varphi'))
+\end{equation}
+
+Weighted sum of predicted transitions for each point in the demonstration:
+\begin{align}
+    p \left( {}^{0}f_i \right)
+     & =
+    \mathcal{N} \left( {}^{0}\mu_i, {}^{0}\boldsymbol{\Sigma}_i \right)
+    \\
+    {}^{0}\mu_i
+     & =
+    \sum_{m = 1}^M {}^{m}\alpha_i \ {}^{m}\boldsymbol{H}^{-1} \ {}^{m}\mu_i \left( {}^{m}x_i \right)
+    \\
+    {}^{0}\boldsymbol{\Sigma}_i
+     & =
+    \sum_{m = 1}^M {}^{m}\alpha_i \ {}^{m}\boldsymbol{H}^{-1} \ {}^{m}\boldsymbol{\Sigma}_i \ {}^{m}\boldsymbol{H}
+\end{align}
+
+\( {}^{0}\Delta\boldsymbol{x} \to \) Recorded desired transition
+
+Maximising the likelihood of each label transition to belong to the predicted distribution \( p \left( {}^{0}f_i \right) \):
+\begin{equation}
+    p \left( {}^{0}\Delta\boldsymbol{x} \mid {}^{0}\boldsymbol{f} \right)
+    =
+    \prod_{i}^{n_d} p \left( {}^{0}\Delta\boldsymbol{x}_i \mid {}^{0}f_i \right)
 \end{equation}
