@@ -83,11 +83,11 @@ Don't use dynamic time warping (DTW).
 
 \subsection{Training of local policies}
 
-Local policies are encoded as a dynamical system, which are learnt using Gaussian processes regression with a Matern kernel and zero mean prior.
+Local policies are encoded as a dynamical system, which are learnt using Gaussian processes regression with a Mat\'{e}rn kernel and zero mean prior.
 \begin{equation}
     \Delta\boldsymbol{x} = f(\boldsymbol{x})
     , \qquad
-    f(\boldsymbol{x}) = \mathcal{GP}(0, k(\boldsymbol{x}, \boldsymbol{x}'))
+    f(\boldsymbol{x}) \sim \mathcal{GP}(0, k(\boldsymbol{x}, \boldsymbol{x}'))
 \end{equation}
 
 A variational approximation of the posterior distribution is used,
@@ -111,10 +111,22 @@ and the predictive distribution on a test point \( \boldsymbol{X}_* \) is
     \boldsymbol{K}(\boldsymbol{X}_*, \boldsymbol{Z}) \ {\boldsymbol{K}(\boldsymbol{Z}, \boldsymbol{Z})}^{-1}
 \end{align}
 
+\subsubsection{Mat\'{e}rn kernel}
+
+\begin{equation}
+    k(x_i, x_j)
+    =
+    \frac{1}{\Gamma(\nu) 2^{\nu - 1}} {\left( \frac{\sqrt{2\nu}}{l} d(x_i , x_j) \right)}^\nu K_\nu \left( \frac{\sqrt{2\nu}}{l} d(x_i , x_j) \right)
+\end{equation}
+
+\( \nu \to \) Smoothness parameter, \( l \to \) Length scale, \( d(\cdot, \cdot) \to \) Euclidean distance, \( \Gamma(\cdot) \to \) Gamma function, \( K_\nu(\cdot) \to \) Modified Bessel function of the second kind.
+
+\( \nu \to \infty \implies \) RBF kernel, \( \nu = 1/2 \implies \) Absolute exponential kernel.
+
 \subsection{Frame relevance GP}
 
 \begin{equation}
-    \boldsymbol{\alpha} = \mathcal{GP}(0, k(\varphi, \varphi'))
+    \boldsymbol{\alpha} \sim \mathcal{GP}(0, k(\varphi, \varphi'))
 \end{equation}
 
 Weighted sum of predicted transitions for each point in the demonstration:
