@@ -4,13 +4,14 @@ Alignment of demonstations
 """
 
 import math
-from typing import Tuple, Union
+from typing import List, Optional, Tuple, Union
 
 import numpy as np
+from numpy.typing import NDArray
 from shapely import LineString, Point, shortest_line
 
 
-def compute_h(ls, i, j) -> Tuple[int, int]:
+def compute_h(ls: List[LineString], i: int, j: int) -> Tuple[int, int]:
     """Given two trajectory indices i and j, compute A(i, j), A(j, i)"""
 
     def closest_vertex_index(
@@ -36,8 +37,11 @@ def compute_h(ls, i, j) -> Tuple[int, int]:
     return idx1, idx2
 
 
-def compute_A(ls):
-    """Compute A(i, j) for all pairs of trajectories"""
+def compute_A(ls: List[LineString]) -> NDArray:
+    """
+    Compute A(i, j) for all pairs of trajectories. \n
+    A(i, j) is the index of the closest point in trajectory i to all other points in trajectory j.
+    """
     N = len(ls)
     A = np.zeros((N, N), dtype=int)
     for i in range(N):
@@ -45,3 +49,17 @@ def compute_A(ls):
             idx1, idx2 = compute_h(ls, i, j)
             A[i, j], A[j, i] = idx1, idx2
     return A
+
+
+def compute_B(ls: List[LineString], A: Optional[NDArray] = None) -> NDArray:
+    """
+    Compute B(i, j) from A(i, j). \n
+    B is the corresponding progress value, i.e., normalised time found by diving by the number of points in the trajectory
+    """
+    N = len(ls)
+    B = np.zeros((N, N), dtype=float)
+    A = compute_A(ls) if A is None else A
+    for i in range(N):
+        for j in range(N):
+            B[i, j] = A[i, j] / len(ls[i].coords)
+    return B
