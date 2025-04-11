@@ -41,7 +41,8 @@ def compute_h(ls: List[LineString], i: int, j: int) -> Tuple[int, int]:
 def compute_A(ls: List[LineString]) -> NDArray:
     """
     Compute A(i, j) for all pairs of trajectories. \n
-    A(i, j) is the index of the closest point in trajectory i to all other points in trajectory j.
+    A(i, j) is the index of the closest point
+    in trajectory i to all other points in trajectory j.
     """
     N = len(ls)
     A = np.zeros((N, N), dtype=int)
@@ -55,7 +56,8 @@ def compute_A(ls: List[LineString]) -> NDArray:
 def compute_B(ls: List[LineString], A: Optional[NDArray] = None) -> NDArray:
     """
     Compute B(i, j) from A(i, j). \n
-    B is the corresponding progress value, i.e., normalised time found by diving by the number of points in the trajectory
+    B is the corresponding progress value, i.e., normalised time
+    found by diving by the number of points in the trajectory
     """
     N = len(ls)
     B = np.zeros((N, N), dtype=float)
@@ -70,7 +72,8 @@ def compute_P(ls: List[LineString], B: Optional[NDArray] = None) -> NDArray:
     """
     Compute P(i, j) from B(i, j). \n
     P(i) is the keypoint progress value for trajectory i,
-    computed as the median of the progress values from B over all other trajectories.
+    computed as the median of the progress values from B
+    over all other trajectories.
     """
     N = len(ls)
     P = np.zeros((N,), dtype=float)
@@ -111,7 +114,10 @@ def plot_index_points(
     indices: Union[int, List[int]] = None,
     only_between: bool = False,
 ) -> plt.Axes:
-    """Plot the closest points using A(i, j) for a given indices of trajectories."""
+    """
+    Plot the closest points using A(i, j)
+    for a given indices of trajectories.
+    """
     A = compute_A(ls) if A is None else A
     indices = _get_indices(ls, indices)
     other: List[int] = (
