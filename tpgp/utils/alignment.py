@@ -66,17 +66,55 @@ def compute_B(ls: List[LineString], A: Optional[NDArray] = None) -> NDArray:
     return B
 
 
+def compute_P(ls: List[LineString], B: Optional[NDArray] = None) -> NDArray:
+    """
+    Compute P(i, j) from B(i, j). \n
+    P(i) is the keypoint progress value for trajectory i,
+    computed as the median of the progress values from B over all other trajectories.
+    """
+    N = len(ls)
+    P = np.zeros((N,), dtype=float)
+    B = compute_B(ls) if B is None else B
+    for i in range(N):
+        P[i] = np.median(B[i, :])
+    return P
+
+
 def plot_index_points(
-    ls: List[LineString], A: Optional[NDArray] = None, indices: List[int] = None
+    ls: List[LineString],
+    A: Optional[NDArray] = None,
+    indices: Union[int, List[int]] = None,
+    only_between: bool = False,
 ) -> None:
     """Plot the closest points using A(i, j) for a given indices of trajectories."""
     A = compute_A(ls) if A is None else A
-    indices = indices or range(len(ls))
+    indices = [indices] if isinstance(indices, int) else indices
+    indices: List[int] = indices or range(len(ls))
+    other: List[int] = (
+        indices if (only_between and len(indices) > 1) else range(len(ls))
+    )
     _, ax = plt.subplots()
     for i in indices:
         ax.plot(*ls[i].xy, label=str(i))
-        for j in indices:
+        for j in other:
             if i != j:
                 ax.plot(*ls[i].coords[int(A[i, j])], "ro")
+    plt.tight_layout()
+    plt.show()
+
+
+def plot_keypoints(
+    ls: List[LineString],
+    P: Optional[NDArray] = None,
+    indices: Union[int, List[int]] = None,
+) -> None:
+    """Plot the keypoints using P(i) for a given indices of trajectories."""
+    P = compute_P(ls) if P is None else P
+    indices = [indices] if isinstance(indices, int) else indices
+    indices: List[int] = indices or range(len(ls))
+    _, ax = plt.subplots()
+    for i in indices:
+        ax.plot(*ls[i].xy, label=str(i))
+        ax.plot(*ls[i].coords[int(P[i] * len(ls[i].coords))], "ro")
     plt.tight_layout()
     plt.show()
