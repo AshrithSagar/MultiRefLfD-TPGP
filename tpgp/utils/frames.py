@@ -42,10 +42,10 @@ def transform_demonstration_set(ls: List[LineString], frame: Frame) -> List[Line
     """
     Transform a demonstration set from global frame to a new frame, without affecting the progress values.
     """
-    transformed_ls = []
+    transformed_ls: List[LineString] = []
     R, t = frame.rotation.as_matrix()[:2, :2], frame.translation
     for demo in ls:
         points = np.array(demo.coords)
-        transformed_points = points @ R.T + t
-        transformed_ls.append(LineString(transformed_points))
+        transformed_points = LineString(points @ R.T + t)
+        transformed_ls.append(transformed_points)
     return transformed_ls
