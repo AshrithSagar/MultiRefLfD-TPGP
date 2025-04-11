@@ -3,12 +3,11 @@ lfd/utils/frames.py \n
 Frames and transformations
 """
 
-from typing import List, NewType, Union, overload
+from functools import partial
+from typing import List, NewType, Tuple, Union, overload
 
-import numpy as np
-from numpy.typing import NDArray
-from scipy.spatial.transform import Rotation
 from shapely import LineString
+from shapely.affinity import rotate, translate
 
 Demonstration = NewType("Demonstration", LineString)
 """
@@ -17,30 +16,7 @@ The progress value is the normalised time for a trajectory; a value between 0 an
 """
 
 DemonstrationSet = NewType("DemonstrationSet", List[Demonstration])
-"""A set of demonstrations"""
-
-
-class Frame:
-    """
-    A frame has a rotation matrix and a translation vector with respect to a reference frame.
-    """
-
-    def __init__(
-        self, index: int, rotation: Rotation = None, translation: NDArray = None
-    ):
-        self.index = index
-        self.rotation = rotation if rotation is not None else Rotation.identity(2)
-        self.translation = (
-            np.array(translation, dtype=float)
-            if translation is not None
-            else np.zeros(2)
-        )
-
-    def __repr__(self):
-        return f"Frame(index={self.index})"
-
-
-GlobalFrame = Frame(0)
+"""A set of demonstrations."""
 
 
 @overload
@@ -68,21 +44,47 @@ def append_progress_values(
         return [append_phi(xi_) for xi_ in xi]
 
 
-def transform_demonstration_set(
-    dset: DemonstrationSet, frame: Frame
-) -> DemonstrationSet:
-    """
-    Transform a demonstration set from global frame to a new frame, without affecting the progress values.
-    Parameters:
-        dset: A list of demonstrations (LineString objects with progress values).
-        frame: The frame to transform to.
-    Returns:
-        A list of transformed demonstrations.
-    """
-    assert dset[0].has_z, "Progress values missing in demonstration set"
-    transformed_dset: DemonstrationSet = []
-    R, t = frame.rotation.as_matrix()[:2, :2], frame.translation
-    for d in dset:
-        transformed_xi = LineString(np.array(d.coords)[:, :2] @ R.T + t)
-        transformed_dset.append(append_progress_values(transformed_xi))
-    return transformed_dset
+class Frame:
+    """Frame class representing a coordinate frame in 2D space."""
+
+    def __init__(
+        self,
+        index: int,
+        rotation: float = 0,
+        translation: Tuple[float, float] = (0, 0),
+    ):
+        """
+        A frame has a rotation matrix and a translation vector
+        with respect to a reference (global) frame.
+        Rotations are with respect to the origin (0, 0).
+        Parameters:
+            index: Frame identifier
+            rotation: Rotation angle (in degrees)
+            translation: Translation vector (2D)
+        """
+        self.index = index
+        self.rotation = rotation
+        self.translation = translation
+
+        self._R = partial(rotate, angle=rotation, origin=(0, 0))
+        self._t = partial(translate, xoff=translation[0], yoff=translation[1], zoff=0)
+
+    def __repr__(self):
+        return f"Frame(index={self.index}, rotation={self.rotation}, translation={self.translation})"
+
+    def transform(self, dset: DemonstrationSet) -> DemonstrationSet:
+        """
+        Transform a point from the global frame to this frame,
+        without affecting the progress values.
+        Parameters:
+            dset: A list of demonstrations (LineString objects with progress values).
+            frame: The frame to transform to.
+        Returns:
+            A list of transformed demonstrations.
+        """
+        assert dset[0].has_z, "Progress values missing in demonstration set"
+        return [self._t(self._R(d)) for d in dset]
+
+
+GlobalFrame = Frame(0)
+"""Global frame (reference) with index 0."""
