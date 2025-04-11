@@ -3,14 +3,21 @@ lfd/utils/frames.py \n
 Frames and transformations
 """
 
-from typing import List, Union, overload
+from typing import List, NewType, Union, overload
 
 import numpy as np
 from numpy.typing import NDArray
 from scipy.spatial.transform import Rotation
 from shapely import LineString
 
-Demonstration = LineString
+Demonstration = NewType("Demonstration", LineString)
+"""
+A demonstration is a sequence of Cartesian points and a progress value.
+The progress value is the normalised time for a trajectory; a value between 0 and 1.
+"""
+
+DemonstrationSet = NewType("DemonstrationSet", List[Demonstration])
+"""A set of demonstrations"""
 
 
 class Frame:
@@ -39,33 +46,31 @@ GlobalFrame = Frame(0)
 @overload
 def append_progress_values(xi: LineString) -> Demonstration: ...
 @overload
-def append_progress_values(xi: List[LineString]) -> List[Demonstration]: ...
+def append_progress_values(xi: List[LineString]) -> DemonstrationSet: ...
 def append_progress_values(
     xi: Union[LineString, List[LineString]],
-) -> Union[Demonstration, List[Demonstration]]:
+) -> Union[Demonstration, DemonstrationSet]:
     """
-    A demonstration is a sequence of Cartesian points and a progress value.
-    The progress value is the normalised time for a trajectory; a value between 0 and 1.
     Parameters:
         xi: A LineString object representing a trajectory (2D).
     Returns:
         A LineString object with progress values added to the coordinates (3D).
     """
 
-    def _append(_xi: LineString) -> Demonstration:
-        l = len(_xi.coords)
-        x = LineString([(*pos, i / (l - 1)) for i, pos in enumerate(_xi.coords)])
+    def append_phi(xi_: LineString) -> Demonstration:
+        l = len(xi_.coords)
+        x = LineString([(*pos, i / (l - 1)) for i, pos in enumerate(xi_.coords)])
         return x
 
     if isinstance(xi, LineString):
-        return _append(xi)
+        return append_phi(xi)
     else:
-        return [_append(xi_) for xi_ in xi]
+        return [append_phi(xi_) for xi_ in xi]
 
 
 def transform_demonstration_set(
-    dset: List[Demonstration], frame: Frame
-) -> List[Demonstration]:
+    dset: DemonstrationSet, frame: Frame
+) -> DemonstrationSet:
     """
     Transform a demonstration set from global frame to a new frame, without affecting the progress values.
     Parameters:
@@ -75,9 +80,9 @@ def transform_demonstration_set(
         A list of transformed demonstrations.
     """
     assert dset[0].has_z, "Progress values missing in demonstration set"
-    transformed_dset: List[Demonstration] = []
+    transformed_dset: DemonstrationSet = []
     R, t = frame.rotation.as_matrix()[:2, :2], frame.translation
     for d in dset:
-        transformed_d = Demonstration(np.array(d.coords) @ R.T + t)
-        transformed_dset.append(transformed_d)
+        transformed_xi = LineString(np.array(d.coords)[:, :2] @ R.T + t)
+        transformed_dset.append(append_progress_values(transformed_xi))
     return transformed_dset
