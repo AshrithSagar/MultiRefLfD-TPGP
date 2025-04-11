@@ -1,5 +1,5 @@
 """
-utils/lasa/helpers.py \n
+lfd/utils/lasa/helpers.py \n
 Helper functions
 """
 

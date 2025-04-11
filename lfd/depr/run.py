@@ -1,5 +1,5 @@
 """
-tpgp/run.py \n
+lfd/depr/run.py \n
 Run the TPGP model with two simple 2D demonstrations.
 """
 

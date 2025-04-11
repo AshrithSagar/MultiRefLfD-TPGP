@@ -1,5 +1,5 @@
 """
-tpgp/utils.py \n
+lfd/depr/utils.py \n
 Utility functions and classes for the TPGP framework.
 """
 

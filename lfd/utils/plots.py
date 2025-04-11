@@ -1,5 +1,5 @@
 """
-utils/plots.py \n
+lfd/utils/plots.py \n
 Plotting utilities
 """
 

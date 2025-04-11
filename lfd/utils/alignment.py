@@ -1,5 +1,5 @@
 """
-utils/alignment.py \n
+lfd/utils/alignment.py \n
 Alignment of demonstations
 """
 

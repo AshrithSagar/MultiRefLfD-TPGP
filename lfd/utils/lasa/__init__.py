@@ -1,5 +1,5 @@
 """
-utils/lasa \n
+lfd/utils/lasa \n
 LASA utilities
 """
 

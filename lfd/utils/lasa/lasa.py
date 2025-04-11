@@ -1,5 +1,5 @@
 """
-utils/lasa/lasa.py \n
+lfd/utils/lasa/lasa.py \n
 LASA dataset
 """
 

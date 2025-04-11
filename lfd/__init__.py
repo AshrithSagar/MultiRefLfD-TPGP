@@ -1,6 +1,6 @@
 """
-tpgp \n
-Task-Parameterized Gaussian Processes
+lfd \n
+Learning from Demonstrations (LfD)
 """
 
 import matplotlib.pyplot as plt
