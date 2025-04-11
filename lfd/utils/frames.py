@@ -6,7 +6,7 @@ Frames and transformations
 from functools import partial
 from typing import List, NewType, Tuple, Union, overload
 
-from shapely import LineString
+from shapely import LineString, Point
 from shapely.affinity import rotate, translate
 
 Demonstration = NewType("Demonstration", LineString)
@@ -52,6 +52,7 @@ class Frame:
         index: int,
         rotation: float = 0,
         translation: Tuple[float, float] = (0, 0),
+        origin: Union[str, Point, Tuple[float, float]] = (0, 0),
     ):
         """
         A frame has a rotation matrix and a translation vector
@@ -65,8 +66,12 @@ class Frame:
         self.index = index
         self.rotation = rotation
         self.translation = translation
+        assert (
+            origin in ["center", "centroid"] if isinstance(origin, str) else True
+        ), "Origin must be 'center', 'centroid', or a point"
+        self.origin = origin
 
-        self._R = partial(rotate, angle=rotation, origin=(0, 0))
+        self._R = partial(rotate, angle=rotation, origin=origin)
         self._t = partial(translate, xoff=translation[0], yoff=translation[1], zoff=0)
 
     def __repr__(self):
