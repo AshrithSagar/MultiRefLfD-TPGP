@@ -7,6 +7,7 @@ from typing import List, Optional, Union
 
 import matplotlib.pyplot as plt
 from numpy.typing import NDArray
+from shapely import get_coordinates
 
 from .alignment import compute_A, compute_P
 from .frames import DemonstrationSet
@@ -56,7 +57,7 @@ def plot_index_points(
     for i in indices:
         for j in other:
             if i != j:
-                ax.plot(*dset[i].coords[int(A[i, j])][:2], "ro")
+                ax.plot(*get_coordinates(dset[i])[int(A[i, j])], "ro")
     return ax
 
 
@@ -70,5 +71,5 @@ def plot_keypoints(
     indices = _get_indices(dset, indices)
     ax = plot_trajectories(dset, indices)
     for i in indices:
-        ax.plot(*dset[i].coords[int(P[i] * len(dset[i].coords))][:2], "ro")
+        ax.plot(*get_coordinates(dset[i])[int(P[i] * len(dset[i].coords))], "ro")
     return ax
