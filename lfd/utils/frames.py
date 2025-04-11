@@ -34,8 +34,18 @@ class Frame:
 GlobalFrame = Frame(0)
 
 
-# A demonstration is a sequence of Cartesian points and a progress value.
-# The progress value is the normalised time for a trajectory; a value between 0 and 1.
+def append_progress_values(xi: LineString) -> LineString:
+    """
+    A demonstration is a sequence of Cartesian points and a progress value.
+    The progress value is the normalised time for a trajectory; a value between 0 and 1.
+    Parameters:
+        xi: A LineString object representing a trajectory (2D).
+    Returns:
+        A LineString object with progress values added to the coordinates (3D).
+    """
+    l = len(xi.coords)
+    x = LineString([(*pos, i / (l - 1)) for i, pos in enumerate(xi.coords)])
+    return x
 
 
 def transform_demonstration_set(ls: List[LineString], frame: Frame) -> List[LineString]:
