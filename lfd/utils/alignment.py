@@ -78,3 +78,19 @@ def compute_P(
     for i in range(N):
         P[i] = np.median(B[i, :])
     return P
+
+
+def resample(dset: DemonstrationSet, frames: List[Frame]) -> DemonstrationSet:
+    """
+    Resample each demonstration in the demonstration set over
+    different frames, aligning each keypoint found in a frame
+    to the same progress value.
+    """
+    N, M = len(dset), len(frames)
+    P = np.zeros((M + 1, N), dtype=float)
+    P[0] = compute_P(dset)
+    for i, frame in enumerate(frames, start=1):
+        transformed_dset = frame.transform(dset)
+        P[i] = compute_P(transformed_dset)
+    P = np.median(P, axis=0)
+    return P
