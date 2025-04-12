@@ -3,6 +3,8 @@ lfd/utils/lasa/helpers.py \n
 Helper functions
 """
 
+from typing import Union
+
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -78,7 +80,7 @@ def derivative(x):
 
 
 # loading the data and plotting
-def load_data(letter):
+def load_data(key: Union[str, int]):
     """
     gets the trajectories coresponding to the given letter
 
@@ -91,9 +93,13 @@ def load_data(letter):
         xd: array of shape(number of trajectories*number of timesteps,2)
 
     """
-    letter2id = dict(c=2, j=6, s=24)
-    assert letter.lower() in letter2id
-    _, x, _, _, _, _ = load_lasa(letter2id[letter.lower()])
+    if isinstance(key, str):
+        letter2id = dict(c=2, g=4, j=6, s=24)
+        assert key.lower() in letter2id
+        _index = letter2id[key.lower()]
+    elif isinstance(key, int):
+        _index = key
+    _, x, _, _, _, _ = load_lasa(_index)
     xd = derivative(x)
     plot_curves(x)
     data = x
