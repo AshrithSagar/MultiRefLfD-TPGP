@@ -6,7 +6,7 @@ Frames and transformations
 from functools import partial
 from typing import List, NewType, Tuple, Union, overload
 
-from shapely import LineString, Point
+from shapely import LineString, Point, get_num_points
 from shapely.affinity import rotate, translate
 
 Demonstration = NewType("Demonstration", LineString)
@@ -34,7 +34,7 @@ def append_progress_values(
     """
 
     def append_phi(xi_: LineString) -> Demonstration:
-        l = len(xi_.coords)
+        l = get_num_points(xi_)
         x = LineString([(*pos, i / (l - 1)) for i, pos in enumerate(xi_.coords)])
         return x
 

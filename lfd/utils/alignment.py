@@ -4,13 +4,13 @@ Alignment of demonstations
 """
 
 import math
-from typing import Optional, Tuple
+from typing import List, Optional, Tuple
 
 import numpy as np
 from numpy.typing import NDArray
-from shapely import LineString, Point, shortest_line
+from shapely import LineString, Point, get_point, shortest_line
 
-from .frames import Demonstration, DemonstrationSet
+from .frames import Demonstration, DemonstrationSet, Frame
 
 
 def compute_h(dset: DemonstrationSet, i: int, j: int) -> Tuple[int, int]:
@@ -59,7 +59,7 @@ def compute_B(dset: DemonstrationSet, A: Optional[NDArray] = None) -> NDArray:
     A = compute_A(dset) if A is None else A
     for i in range(N):
         for j in range(N):
-            B[i, j] = A[i, j] / len(dset[i].coords)
+            B[i, j] = get_point(dset[i], A[i, j]).z
     return B
 
 
