@@ -1,5 +1,4 @@
 matplotlib==3.9.4
 numpy==1.26.4
-pyLasaDataset==0.1.1
 scipy==1.10.1
 shapely==2.0.7
