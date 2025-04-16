@@ -1,0 +1,15 @@
+\section{Appendix}\label{sec:appendix}
+
+\subsection{Evidence Lower Bound (ELBO)}
+
+The ELBO is a lower bound on the log-likelihood of the data given the model parameters.
+\begin{equation}
+    \begin{aligned}
+        \mathcal{L}(\theta, \phi; x)
+         & =
+        \mathbb{E}_{q_\phi(z|x)} \left[ \log p_\theta(x|z) \right] - D_{KL}(q_\phi(z|x) || p(z))
+        \\ & =
+        \mathbb{E}_{q_\phi(z|x)}\left[\log p_\theta(x|z)\right] - \int q_\phi(z|x) \log \frac{q_\phi(z|x)}{p(z)} dz
+    \end{aligned}
+\end{equation}
+where \(q_\phi(z|x)\) is the approximate posterior, \(p_\theta(x|z)\) is the likelihood, and \(p(z)\) is the prior, and \(D_{KL}\) refers to the Kullback-Leibler divergence.
