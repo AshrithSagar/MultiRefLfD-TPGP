@@ -71,5 +71,5 @@ def plot_keypoints(
     indices = _get_indices(dset, indices)
     ax = plot_trajectories(dset, indices)
     for i in indices:
-        ax.plot(*get_coordinates(dset[i])[int(P[i] * len(dset[i].coords))], "ro")
+        ax.plot(*get_coordinates(dset[i])[int(P[i] * (len(dset[i].coords) - 1))], "ro")
     return ax

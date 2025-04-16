@@ -36,3 +36,5 @@ Learning Multi-Reference Frame Skills from Demonstration with Task-Parameterized
 ## References
 
 - Mariano Ramírez Montero, Giovanni Franzese, Jens Kober, and Cosimo Della Santina. Learning Multi-Reference Frame Skills from Demonstration with Task-Parameterized Gaussian Processes. In IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS), pp. 2832–2839, 2024.
+
+- <https://github.com/dfki-ric/movement_primitives>
