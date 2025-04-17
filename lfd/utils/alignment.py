@@ -80,6 +80,7 @@ def compute_P(
     return P
 
 
+# TODO: Verify
 def resample(dset: DemonstrationSet, frames: List[Frame]) -> DemonstrationSet:
     """
     Resample each demonstration in the demonstration set over
@@ -87,10 +88,24 @@ def resample(dset: DemonstrationSet, frames: List[Frame]) -> DemonstrationSet:
     to the same progress value.
     """
     N, M = len(dset), len(frames)
-    P = np.zeros((M + 1, N), dtype=float)
-    P[0] = compute_P(dset)
-    for i, frame in enumerate(frames, start=1):
+    P = np.zeros((M, N), dtype=float)
+    for i, frame in enumerate(frames):
         transformed_dset = frame.transform(dset)
         P[i] = compute_P(transformed_dset)
     P = np.median(P, axis=0)
-    return P
+
+    aligned_dset: DemonstrationSet = []
+    for i, demo in enumerate(dset):
+        points = list(demo.coords)
+        progress = [pt[2] for pt in points]
+        xy = [pt[:2] for pt in points]
+        x, y = zip(*xy)
+        x_interp = np.interp(np.linspace(0, 1, len(progress)), progress, x)
+        y_interp = np.interp(np.linspace(0, 1, len(progress)), progress, y)
+        new_points = [
+            (x_, y_, t)
+            for x_, y_, t in zip(x_interp, y_interp, np.linspace(0, 1, len(progress)))
+        ]
+        aligned_dset.append(LineString(new_points))
+
+    return aligned_dset
