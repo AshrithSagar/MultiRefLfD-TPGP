@@ -33,6 +33,24 @@ Learning Multi-Reference Frame Skills from Demonstration with Task-Parameterized
 
 ## Usage
 
+WIP
+
+```python
+from lfd import *
+
+data, x, xd = load_data("s")
+dset = append_progress_values([LineString(traj) for traj in data])
+
+plot_index_points(dset, indices=[0, 1], only_between=True)
+plot_keypoints(dset, indices=[1])
+
+f1 = Frame(index=1, rotation=10, translation=(5, 5))
+dset_f1 = f1.transform(dset)
+plot_trajectories([dset[0], dset_f1[0]])
+
+aligned_dset = resample(dset, frames=[f1])
+```
+
 ## References
 
 - Mariano Ramírez Montero, Giovanni Franzese, Jens Kober, and Cosimo Della Santina. Learning Multi-Reference Frame Skills from Demonstration with Task-Parameterized Gaussian Processes. In IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS), pp. 2832–2839, 2024.
