@@ -48,7 +48,7 @@ f1 = Frame(index=1, rotation=10, translation=(5, 5))
 dset_f1 = f1.transform(dset)
 plot_trajectories([dset[0], dset_f1[0]])
 
-aligned_dset = resample(dset, frames=[f1])
+al_dset = resample(dset, frames=[f1])
 ```
 
 ## References
