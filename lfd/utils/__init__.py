@@ -9,3 +9,4 @@ from .frames import *
 from .gp import *
 from .lasa import *
 from .plots import *
+from .utils import *

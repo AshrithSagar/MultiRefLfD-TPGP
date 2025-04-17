@@ -203,7 +203,7 @@ class FrameRelevanceGP:
 
             # Optimize
             self.optimizer.zero_grad()
-            nll.backward()
+            nll.backward(retain_graph=True)
             self.optimizer.step()
 
             if log_every and step % log_every == 0:
