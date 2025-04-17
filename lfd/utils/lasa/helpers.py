@@ -80,7 +80,7 @@ def derivative(x):
 
 
 # loading the data and plotting
-def load_data(key: Union[str, int]):
+def load_data(key: Union[str, int], show_plot: bool = False):
     """
     gets the trajectories coresponding to the given letter
 
@@ -101,9 +101,10 @@ def load_data(key: Union[str, int]):
         _index = key
     _, x, _, _, _, _ = load_lasa(_index)
     xd = derivative(x)
-    plot_curves(x)
+    if show_plot:
+        plot_curves(x)
+        plt.show()
     data = x
     x = x.reshape(-1, 2)
     xd = xd.reshape(-1, 2)
-    plt.show()
     return data, x, xd

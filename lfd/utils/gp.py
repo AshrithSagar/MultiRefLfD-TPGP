@@ -12,7 +12,7 @@ import torch
 import torch.optim as optim
 from numpy.typing import NDArray
 from pyro.infer import SVI, Trace_ELBO
-from pyro.optim import Adam, PyroOptim
+from pyro.optim import ClippedAdam, PyroOptim
 from torch import Tensor
 
 
@@ -57,7 +57,7 @@ class LocalPolicyGP:
             self.models.append(gpr)
 
         # Set up optimizer and SVI
-        self.optim: PyroOptim = Adam({"lr": lr})
+        self.optim: PyroOptim = ClippedAdam({"lr": lr})
         self.elbo = Trace_ELBO()
         self.svis = [
             SVI(m.model, m.guide, self.optim, loss=self.elbo) for m in self.models
