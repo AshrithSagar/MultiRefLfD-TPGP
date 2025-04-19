@@ -1,7 +1,0 @@
-matplotlib
-numpy
-pyro-ppl
-pyro-ppl[extras]
-scipy
-shapely
-torch

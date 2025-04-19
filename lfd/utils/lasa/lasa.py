@@ -16,9 +16,7 @@ except ImportError:
     from urllib.request import urlopen
 
 
-LASA_URL = (
-    "http://bitbucket.org/khansari/lasahandwritingdataset/get/" "38304f7c0ac4.zip"
-)
+LASA_URL = "http://bitbucket.org/khansari/lasahandwritingdataset/get/38304f7c0ac4.zip"
 
 
 def load_lasa(shape_idx):

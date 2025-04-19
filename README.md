@@ -2,7 +2,7 @@
 
 ![GitHub](https://img.shields.io/github/license/AshrithSagar/MultiRefLfD-TPGP)
 ![GitHub repo size](https://img.shields.io/github/repo-size/AshrithSagar/MultiRefLfD-TPGP)
-[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+[![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 
 Learning Multi-Reference Frame Skills from Demonstration with Task-Parameterized Gaussian Processes (TPGP)
 
@@ -18,22 +18,38 @@ Learning Multi-Reference Frame Skills from Demonstration with Task-Parameterized
     git clone https://github.com/AshrithSagar/MultiRefLfD-TPGP.git
     ```
 
-2. Install the [dependencies](requirements.txt), creating a virtual environment if required.
+2. Install [`uv`](https://docs.astral.sh/uv/), if not already.
+   Check [here](https://docs.astral.sh/uv/getting-started/installation/) for installation instructions.
+
+    > [!TIP]
+    > It is recommended to use `uv`, as it will automatically install the dependencies in a virtual environment.
+
+   TL;DR:
 
     ```shell
-    pip3 install -r requirements.txt
-    cd lfd
+    curl -LsSf https://astral.sh/uv/install.sh | sh
     ```
 
-    Or, just install through `pip` in editable mode.
+    The dependencies are listed in the [pyproject.toml](pyproject.toml) file.
+
+3. Install the package in editable mode (recommended).
 
     ```shell
-    pip3 install -e .
+    uv pip install -e .
     ```
 
 ## Usage
 
-WIP
+> [!WARNING]
+> WIP
+
+Directly run a script:
+
+```shell
+uv run lfd/run.py
+```
+
+Additionally, use the `lfd` module as a library.
 
 ```python
 from lfd import *

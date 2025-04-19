@@ -1,3 +1,32 @@
+[project]
+name = "MultiRefLfD-TPGP"
+version = "0.0.2"
+description = "Learning Multi-Reference Frame Skills from Demonstration with Task-Parameterized Gaussian Processes (TPGP)"
+readme = "README.md"
+license = { text = "MIT" }
+authors = [{ name = "Ashrith Sagar", email = "ashrithy@iisc.ac.in" }]
+keywords = [
+    "robotics",
+    "imitation learning",
+    "learning from demonstration",
+    "task-parameterized gaussian processes",
+]
+requires-python = ">=3.10"
+dependencies = [
+    "matplotlib>=3.9.4",
+    "numpy>=2.0.2",
+    "pyro-ppl[extras]>=1.9.1",
+    "scipy>=1.13.1",
+    "shapely>=2.0.7",
+    "torch>=2.6.0",
+]
+
 [build-system]
-requires = ["setuptools"]
-build-backend = "setuptools.build_meta"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["lfd"]
+
+[dependency-groups]
+dev = ["ipykernel>=6.29.5", "ruff>=0.11.6", "uv>=0.6.14"]

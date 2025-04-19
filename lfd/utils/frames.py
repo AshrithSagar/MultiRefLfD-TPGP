@@ -47,8 +47,7 @@ def append_progress_values(
         return [append_phi(xi_) for xi_ in xi]
     else:
         raise TypeError(
-            "xi must be a LineString or a list of LineStrings, "
-            f"not {type(xi).__name__}"
+            f"xi must be a LineString or a list of LineStrings, not {type(xi).__name__}"
         )
 
 
@@ -74,9 +73,9 @@ class Frame:
         self.index = index
         self.rotation = rotation
         self.translation = translation
-        assert (
-            origin in ["center", "centroid"] if isinstance(origin, str) else True
-        ), "Origin must be 'center', 'centroid', or a point"
+        assert origin in ["center", "centroid"] if isinstance(origin, str) else True, (
+            "Origin must be 'center', 'centroid', or a point"
+        )
         self.origin = origin
 
         self._R = partial(rotate, angle=rotation, origin=origin)
