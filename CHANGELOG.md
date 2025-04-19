@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- ManimCE animations
+
 ### Changed
 
 - Migrated from `pip` to `uv` for package management.

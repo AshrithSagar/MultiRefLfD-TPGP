@@ -10,6 +10,9 @@ lfd/notebooks/
 # Runs
 lfd/experiments/
 
+# Manim
+manimations/media/
+
 
 ### Python
 

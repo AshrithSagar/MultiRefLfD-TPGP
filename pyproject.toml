@@ -13,6 +13,7 @@ keywords = [
 ]
 requires-python = ">=3.10"
 dependencies = [
+    "manim>=0.19.0",
     "matplotlib>=3.9.4",
     "numpy>=2.0.2",
     "pyro-ppl[extras]>=1.9.1",
@@ -29,4 +30,11 @@ build-backend = "hatchling.build"
 packages = ["lfd"]
 
 [dependency-groups]
-dev = ["ipykernel>=6.29.5", "ruff>=0.11.6", "uv>=0.6.14"]
+dev = [
+    "ipykernel>=6.29.5",
+    "jupyter>=1.1.1",
+    "jupyter-ruff>=0.2.0",
+    "jupyterlab>=4.4.0",
+    "ruff>=0.11.6",
+    "uv>=0.6.14",
+]

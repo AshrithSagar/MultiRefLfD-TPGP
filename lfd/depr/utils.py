@@ -250,7 +250,7 @@ class TPGP:
         if self.frame_relevance_gp is not None:
             # Here, we assume that higher relevance scores indicate a better match.
             # In a more detailed implementation, one might compute a relevance for each frame.
-            relevance = self.frame_relevance_gp.predict(progress)
+            self.frame_relevance_gp.predict(progress)
             # For demonstration, we equally weight if only one GP is used.
             weights = {
                 frame: 1.0 / len(self.local_policies) for frame in self.local_policies
