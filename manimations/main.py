@@ -9,13 +9,10 @@ from typing import Tuple
 import manim as mn
 import numpy as np
 from numpy.typing import NDArray
-from shapely import LineString
 
-from lfd.utils.frames import Demonstration, append_progress_values
-from lfd.utils.lasa import load_data
+from lfd import Demonstration, load_dset
 
-data, _, _ = load_data("s")
-dset = append_progress_values([LineString(traj) for traj in data])
+dset = load_dset("s")
 
 
 # Utility functions
@@ -80,7 +77,7 @@ class DemonstrationScene3D(mn.ThreeDScene):
 
         scale, mean = find_scale_and_mean(dset[-1])
 
-        # Loop and show each trajectory
+        # Loop and draw each trajectory
         num_traj = len(dset)
         for i, traj in enumerate(dset[:num_traj]):
             arr = demo_to_points(traj, include_z=True)
@@ -91,5 +88,6 @@ class DemonstrationScene3D(mn.ThreeDScene):
             path.set_points_as_corners(norm_points)
             path.set_stroke(color=color, width=3)
 
-            self.add(path)
-            self.wait(0.5)
+            self.begin_ambient_camera_rotation(rate=0.015)
+            self.play(mn.Create(path), run_time=2)
+            self.stop_ambient_camera_rotation()
