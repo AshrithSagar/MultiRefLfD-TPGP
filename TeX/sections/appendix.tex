@@ -1,5 +1,17 @@
 \section{Appendix}\label{sec:appendix}
 
+\subsection{Mat\'{e}rn kernel}\label{sec:matern-kernel}
+
+\begin{equation}
+    k(x_i, x_j)
+    =
+    \frac{1}{\Gamma(\nu) 2^{\nu - 1}} {\left( \frac{\sqrt{2\nu}}{l} d(x_i , x_j) \right)}^\nu K_\nu \left( \frac{\sqrt{2\nu}}{l} d(x_i , x_j) \right)
+\end{equation}
+
+\( \nu \to \) Smoothness parameter, \( l \to \) Length scale, \( d(\cdot, \cdot) \to \) Euclidean distance, \( \Gamma(\cdot) \to \) Gamma function, \( K_\nu(\cdot) \to \) Modified Bessel function of the second kind.
+
+\( \nu \to \infty \implies \) RBF kernel, \( \nu = 1/2 \implies \) Absolute exponential kernel.
+
 \subsection{Evidence Lower Bound (ELBO)}
 
 The ELBO is a lower bound on the log-likelihood of the data given the model parameters.

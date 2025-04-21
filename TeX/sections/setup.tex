@@ -8,13 +8,23 @@
 
 \( \boldsymbol{d}_n \to \) \( n \)-th demonstration, which is a set of \( l \) sequential states, \( \boldsymbol{d}_n = \{ \boldsymbol{x}_{n, 0}, \ldots, \boldsymbol{x}_{n, l} \} \).
 
+\( l \to \) Total number of states in a demonstration, \( l \in \mathbb{N} \).
+
 \( N \to \) Total number of demonstrations, \( N \in \mathbb{N} \).
 
 \( \mathcal{D}^{(0)} \to \) Set of all given training demonstrations, in the global (fixed) frame \( \{ 0 \} \), \( \mathcal{D}^{(0)} = \{ {}^{0}\boldsymbol{d}_0, \ldots, {}^{0}\boldsymbol{d}_N \} \).
 
 \( M \to \) Total number of frames, \( M \in \mathbb{N} \).
 
+\paragraph{Progress values \( \varphi \)}
+Progress values for each state \( \boldsymbol{x}_{n, i} \) in a demonstration \( \boldsymbol{d}_n \) are obtained by dividing the index of the state by the total number of states in the demonstration, ensuring \( \varphi \in [0, 1] \):
+\begin{equation}
+    \varphi_{n, i} = \frac{i}{l}, \quad \forall n \in \{ 0, \ldots, N \}, \forall i \in \{ 0, \ldots, l \}
+\end{equation}
+
 \subsection{Transformation}\label{sec:transformation}
+
+The corresponding rotation matrix \( {}^{m}\boldsymbol{R} \) and translation vector \( {}^{m}\boldsymbol{t} \) for every relevant frame \( m \) are identified at the beginning of the demonstration recording and stored accordingly.
 
 For each frame \( m \), the datapoint \( {}^{0}\boldsymbol{x}_{n, i} \) is tranformed from frame \( 0 \) to frame \( m \) by
 
@@ -85,7 +95,7 @@ Don't use dynamic time warping (DTW).
 
 Local policies are encoded as a dynamical system, which are learnt using Gaussian processes regression with a Mat\'{e}rn kernel and zero mean prior.
 \begin{equation}
-    \Delta\boldsymbol{x} = f(\boldsymbol{x})
+    \Delta \boldsymbol{x} = f(\boldsymbol{x})
     , \qquad
     f(\boldsymbol{x}) \sim \mathcal{GP}(0, k(\boldsymbol{x}, \boldsymbol{x}'))
 \end{equation}
@@ -111,44 +121,48 @@ and the predictive distribution on a test point \( \boldsymbol{X}_* \) is
     \boldsymbol{K}(\boldsymbol{X}_*, \boldsymbol{Z}) \ {\boldsymbol{K}(\boldsymbol{Z}, \boldsymbol{Z})}^{-1}
 \end{align}
 
-\subsubsection{Mat\'{e}rn kernel}\label{sec:matern-kernel}
-
+Every prediction returns the mean and variance of the desired transition \( p(\Delta \boldsymbol{x}_i) = \mathcal{N}(\mu_i, \sigma_i^2) \) from which the total variance can be found by \( \sigma^2(\boldsymbol{x}) = \sum_{i} \sigma_i^2(\boldsymbol{x}) \).
+An additional term is added to each of the Cartesian transitions to attract the autonomous system into regions of minimum risk/uncertainty by considering the total uncertainty \( \sigma^2(\boldsymbol{x}) \) as a quantification fo the potential risk, as
 \begin{equation}
-    k(x_i, x_j)
-    =
-    \frac{1}{\Gamma(\nu) 2^{\nu - 1}} {\left( \frac{\sqrt{2\nu}}{l} d(x_i , x_j) \right)}^\nu K_\nu \left( \frac{\sqrt{2\nu}}{l} d(x_i , x_j) \right)
+    \Delta \boldsymbol{\xi}_i^{\text{risk}} = - \beta \sigma_i(\boldsymbol{x}) \frac{\nabla_i \sigma^2(\boldsymbol{x})}{\Vert \nabla \sigma^2(\boldsymbol{x}) \Vert}
 \end{equation}
 
-\( \nu \to \) Smoothness parameter, \( l \to \) Length scale, \( d(\cdot, \cdot) \to \) Euclidean distance, \( \Gamma(\cdot) \to \) Gamma function, \( K_\nu(\cdot) \to \) Modified Bessel function of the second kind.
-
-\( \nu \to \infty \implies \) RBF kernel, \( \nu = 1/2 \implies \) Absolute exponential kernel.
+Since the standard deviation prediction \( \sigma_i \) converges to the standard deviation of the prior when we go outside the region of demonstration, we choose \( \beta = 2 \) here to create an attractive field that is well-calibrated as the prior, since
+\begin{equation}
+    \Pr \Big( \big\vert \Delta s_i(\boldsymbol{x}) \big\vert < 2 \sigma_i^\text{prior} \Big) \approx 0.95, \quad \forall \boldsymbol{x} \in \boldsymbol{X}
+\end{equation}
 
 \subsection{Frame relevance GP}\label{sec:frame-relevance-gp}
+
+Another Gaussian process is used to learn the frame relevance as a function of the progress value \( \varphi \)
 
 \begin{equation}
     \boldsymbol{\alpha} \sim \mathcal{GP}(0, k(\varphi, \varphi'))
 \end{equation}
 
+This is done in a self-supervised manner by using the trained local GP's and a new set of demonstrations that the local GP's have not been trained on, to predict the local transition probability, which are transformed to the global fixed frame using \( {}^{m}\boldsymbol{H} \) and weighted by each frame relevance.
+Additionally, a softmax likelihood is used to ensure the frame relevance \( \alpha_i \) is positive and sums to 1.
+
 Weighted sum of predicted transitions for each point in the demonstration:
 \begin{align}
     p \left( {}^{0}f_i \right)
      & =
-    \mathcal{N} \left( {}^{0}\mu_i, {}^{0}\boldsymbol{\Sigma}_i \right)
+    \mathcal{N} \left( {}^{0}\boldsymbol{\mu}_i, {}^{0}\boldsymbol{\Sigma}_i \right)
     \\
-    {}^{0}\mu_i
+    {}^{0}\boldsymbol{\mu}_i
      & =
-    \sum_{m = 1}^M {}^{m}\alpha_i \ {}^{m}\boldsymbol{H}^{-1} \ {}^{m}\mu_i \left( {}^{m}x_i \right)
+    \sum_{m = 1}^M {}^{m}\alpha_i \ {}^{m}\boldsymbol{H}^{-1} \ {}^{m}\boldsymbol{\mu}_i \left( {}^{m}\boldsymbol{x}_i \right)
     \\
     {}^{0}\boldsymbol{\Sigma}_i
      & =
-    \sum_{m = 1}^M {}^{m}\alpha_i \ {}^{m}\boldsymbol{H}^{-1} \ {}^{m}\boldsymbol{\Sigma}_i \ {}^{m}\boldsymbol{H}
+    \sum_{m = 1}^M {}^{m}\alpha_i \ {}^{m}\boldsymbol{H}^{-1} \ {}^{m}\boldsymbol{\Sigma}_i \left( {}^{m}\boldsymbol{x}_i \right) {}^{m}\boldsymbol{H}
 \end{align}
 
-\( {}^{0}\Delta\boldsymbol{x} \to \) Recorded desired transition
+\( {}^{0}\Delta \boldsymbol{x} \to \) Recorded desired transition
 
 Maximising the likelihood of each label transition to belong to the predicted distribution \( p \left( {}^{0}f_i \right) \):
 \begin{equation}
-    p \left( {}^{0}\Delta\boldsymbol{x} \mid {}^{0}\boldsymbol{f} \right)
+    p \left( {}^{0}\Delta \boldsymbol{x} \mid {}^{0}\boldsymbol{f} \right)
     =
-    \prod_{i}^{n_d} p \left( {}^{0}\Delta\boldsymbol{x}_i \mid {}^{0}f_i \right)
+    \prod_{i}^{n_d} p \left( {}^{0}\Delta \boldsymbol{x}_i \mid {}^{0}f_i \right)
 \end{equation}
