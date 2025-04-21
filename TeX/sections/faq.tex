@@ -1,0 +1,80 @@
+\section{FAQs}\label{sec:faq}
+
+\textbf{Why separate the rotation and translation parts while transforming the datapoints?}
+
+We don't want to affect the progress values while performing the transformations.
+Particularly,
+\begin{equation}
+    \begin{aligned}
+        {}^{0}\boldsymbol{x}_{n, i}
+        =
+        \begin{bmatrix}
+            {}^{0}\boldsymbol{\xi}_{n, i} \\
+            {}^{0}\varphi_{n, i}
+        \end{bmatrix}
+        \implies
+        {}^{m}\boldsymbol{x}_{n, i}
+         & =
+        \begin{bmatrix}
+            {}^{m}\boldsymbol{t} \\
+            0
+        \end{bmatrix}
+        +
+        {}^{m}\boldsymbol{H} \; {}^{0}\boldsymbol{x}_{n, i}
+        =
+        \begin{bmatrix}
+            {}^{m}\boldsymbol{t} \\
+            0
+        \end{bmatrix}
+        +
+        \begin{bmatrix}
+            {}^{m}\boldsymbol{R} & \boldsymbol{0} \\
+            \boldsymbol{0}       & 1
+        \end{bmatrix}
+        \begin{bmatrix}
+            {}^{0}\boldsymbol{\xi}_{n, i} \\
+            {}^{0}\varphi_{n, i}
+        \end{bmatrix}
+        \\
+        \implies
+        \begin{bmatrix}
+            {}^{m}\boldsymbol{\xi}_{n, i} \\
+            {}^{m}\varphi_{n, i}
+        \end{bmatrix}
+         & =
+        \begin{bmatrix}
+            {}^{m}\boldsymbol{t} \\
+            0
+        \end{bmatrix}
+        +
+        \begin{bmatrix}
+            {}^{m}\boldsymbol{R} \ {}^{0}\boldsymbol{\xi}_{n, i} \\
+            {}^{0}\varphi_{n, i}
+        \end{bmatrix}
+        =
+        \begin{bmatrix}
+            {}^{m}\boldsymbol{t} + {}^{m}\boldsymbol{R} \ {}^{0}\boldsymbol{\xi}_{n, i} \\
+            {}^{0}\varphi_{n, i}
+        \end{bmatrix}
+    \end{aligned}
+\end{equation}
+\begin{equation}
+    \implies
+    {}^{m}\boldsymbol{\xi}_{n, i}
+    =
+    {}^{m}\boldsymbol{t} + {}^{m}\boldsymbol{R} \ {}^{0}\boldsymbol{\xi}_{n, i}
+    \quad \text{and} \quad
+    \boxed{
+    {}^{m}\varphi_{n, i}
+                =
+                {}^{0}\varphi_{n, i}
+        }
+\end{equation}
+where implicitly \( {}^{0}\boldsymbol{\xi}_{n, i}, {}^{m}\boldsymbol{R}, {}^{m}\boldsymbol{t}, {}^{m}\boldsymbol{\xi}_{n, i} \) are conformable matrices.
+\qed{}
+
+\vspace{1em}
+\textbf{Why use variational approximation?}
+
+\vspace{1em}
+\textbf{What is \( n_d \)?}
