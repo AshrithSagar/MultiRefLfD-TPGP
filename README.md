@@ -54,8 +54,7 @@ Additionally, use the `lfd` module as a library.
 ```python
 from lfd import *
 
-data, x, xd = load_data("s")
-dset = append_progress_values([LineString(traj) for traj in data])
+dset = load_dset("s")
 
 plot_index_points(dset, indices=[0, 1], only_between=True)
 plot_keypoints(dset, indices=[1])
