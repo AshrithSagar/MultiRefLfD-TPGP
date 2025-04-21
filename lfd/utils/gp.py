@@ -45,7 +45,7 @@ class LocalPolicyGP:
         # Build one sparse GP per output dimension
         self.models: List[gp.models.VariationalSparseGP] = []
         for i in range(self.output_dim):
-            kernel = kernels.Matern52(input_dim=self.X.shape[1])
+            kernel = kernels.Matern32(input_dim=self.X.shape[1])
             lik = likelihoods.Gaussian(variance=torch.tensor(noise))
             gpr = gp.models.VariationalSparseGP(
                 self.X,
@@ -125,7 +125,7 @@ class FrameRelevanceGP:
         self.u = torch.nn.Parameter(torch.zeros(num_frames, M))
 
         # Kernel and prior covariance
-        self.kernel = kernels.Matern52(input_dim=1)
+        self.kernel = kernels.Matern32(input_dim=1)
         Kuu = self.kernel(self.Xu, self.Xu) + noise * torch.eye(M)
         self.Kuu_inv = torch.inverse(Kuu)
 
