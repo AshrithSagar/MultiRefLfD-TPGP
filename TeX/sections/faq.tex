@@ -74,6 +74,16 @@ where implicitly \( {}^{0}\boldsymbol{\xi}_{n, i}, {}^{m}\boldsymbol{R}, {}^{m}\
 \qed{}
 
 \vspace{1em}
+\textbf{Why use the median to find keypoint progress values?}
+
+Median is less sensitive to outliers than the mean, and more robust in general.
+What we're trying to achieve is a central progress value for each of the index points; posing this as an optimisation problem, the median estimator is
+\begin{equation}
+    \mu_{\text{median}} = \arg \min_{a} \mathbb{E} \Big[ \big \vert X - a \big \vert \Big]
+\end{equation}
+which tries to minimise the expected absolute deviation.
+
+\vspace{1em}
 \textbf{Why use variational approximation?}
 
 \vspace{1em}

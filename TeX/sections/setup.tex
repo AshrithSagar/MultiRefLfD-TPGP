@@ -113,7 +113,7 @@ and the predictive distribution on a test point \( \boldsymbol{X}_* \) is
     \implies
     p(\boldsymbol{f}_*)
      & =
-    \mathcal{N} \Big( \boldsymbol{A} \boldsymbol{m}, \boldsymbol{K}(\boldsymbol{X}_*, \boldsymbol{X}_*) + \boldsymbol{A} \big( \boldsymbol{S} - \boldsymbol{K}(\boldsymbol{Z}, \boldsymbol{Z}) \big) \boldsymbol{A}^\top \Big)
+    \mathcal{N} \Big( \boldsymbol{A} \boldsymbol{m}, \ \boldsymbol{K}(\boldsymbol{X}_*, \boldsymbol{X}_*) + \boldsymbol{A} \big( \boldsymbol{S} - \boldsymbol{K}(\boldsymbol{Z}, \boldsymbol{Z}) \big) \boldsymbol{A}^\top \Big)
     \\
     \text{where }
     \boldsymbol{A}
@@ -141,7 +141,7 @@ Another Gaussian process is used to learn the frame relevance as a function of t
 \end{equation}
 
 This is done in a self-supervised manner by using the trained local GP's and a new set of demonstrations that the local GP's have not been trained on, to predict the local transition probability, which are transformed to the global fixed frame using \( {}^{m}\boldsymbol{H} \) and weighted by each frame relevance.
-Additionally, a softmax likelihood is used to ensure the frame relevance \( \alpha_i \) is positive and sums to 1.
+Additionally, a softmax likelihood is used to ensure that each \( {}^{m}\alpha_i > 0 \) and \( \sum_{m=1}^M {}^{m}\alpha_i = 1 \) for each \( i \)-th point in the demonstration.
 
 Weighted sum of predicted transitions for each point in the demonstration:
 \begin{align}
