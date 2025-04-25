@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.0.3] - 2025-04-25
+
 ### Added
 
 - ManimCE animations
@@ -41,6 +43,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Initial release.
 
-[unreleased]: https://github.com/AshrithSagar/MultiRefLfD-TPGP/compare/v0.0.2...HEAD
+[unreleased]: https://github.com/AshrithSagar/MultiRefLfD-TPGP/compare/v0.0.3...HEAD
+[v0.0.3]: https://github.com/AshrithSagar/MultiRefLfD-TPGP/compare/v0.0.2...v0.0.3
 [v0.0.2]: https://github.com/AshrithSagar/MultiRefLfD-TPGP/compare/v0.0.1...v0.0.2
 [v0.0.1]: https://github.com/AshrithSagar/MultiRefLfD-TPGP/releases/tag/v0.0.1
