@@ -181,7 +181,7 @@ def align_demonstrations(fdset: NDArray, P: Optional[NDArray] = None) -> NDArray
     return D0_star
 
 
-def plot_Keypoints(fdset: NDArray, P: Optional[NDArray] = None):
+def plot_Keypoints(fdset: NDArray, P: Optional[NDArray] = None, alpha: float = 0.5):
     n_frames, n_traj, n_length, n_dim = fdset.shape
     n_frames -= 1
     P = computeP(fdset) if P is None else P  # (n_frames, n_traj)
@@ -192,7 +192,7 @@ def plot_Keypoints(fdset: NDArray, P: Optional[NDArray] = None):
     for d in range(n_dim - 1):
         for n in range(n_traj):
             dn = fdset[0, n]  # (n_length, n_dim)
-            ax[d].plot(dn[:-1, 0], dn[:-1, d + 1], alpha=0.4, zorder=1)
+            ax[d].plot(dn[:-1, 0], dn[:-1, d + 1], alpha=alpha, zorder=1)
             ax[d].scatter(dn[0, 0], dn[0, d + 1], c="k", zorder=2)
             ax[d].scatter(dn[-2, 0], dn[-2, d + 1], c="b", zorder=2)
             for m in range(n_frames):
@@ -204,7 +204,9 @@ def plot_Keypoints(fdset: NDArray, P: Optional[NDArray] = None):
     plt.tight_layout()
 
 
-def plot_alignments(fdset: NDArray, D0_star: NDArray, P: Optional[NDArray] = None):
+def plot_alignments(
+    fdset: NDArray, D0_star: NDArray, P: Optional[NDArray] = None, alpha: float = 0.5
+):
     n_frames, n_traj, n_length, n_dim = fdset.shape
     n_frames -= 1
     P = computeP(fdset) if P is None else P  # (n_frames, n_traj)
@@ -216,17 +218,18 @@ def plot_alignments(fdset: NDArray, D0_star: NDArray, P: Optional[NDArray] = Non
     for d in range(n_dim - 1):
         for n in range(n_traj):
             dn = D0_star[n]  # (n_length, n_dim)
-            ax[d].plot(dn[:-1, 0], dn[:-1, d + 1], alpha=0.4, zorder=1)
+            ax[d].plot(dn[:-1, 0], dn[:-1, d + 1], alpha=alpha, zorder=1)
             ax[d].scatter(dn[0, 0], dn[0, d + 1], c="k", zorder=2)
             ax[d].scatter(dn[-2, 0], dn[-2, d + 1], c="b", zorder=2)
             # dn = X[0, n]  # (n_length, n_dim)
-            # ax[d].plot(dn[:-1, 0], dn[:-1, d + 1], alpha=0.4, zorder=1)
+            # ax[d].plot(dn[:-1, 0], dn[:-1, d + 1], alpha=alpha, zorder=1)
             for m in range(n_frames):
                 keyp = dn[phi2index(dn, aligned_phi[m])]  # (n_dim,)
                 ax[d].scatter(keyp[0], keyp[d + 1], c=[colors[m]], marker="x", zorder=3)
                 # keyp = dn[phi2index(dn, P[m, n])]  # (n_dim,)
                 # ax[d].scatter(keyp[0], keyp[d + 1], c=[colors[m]], marker="x", zorder=3)
-        ax[d].vlines(aligned_phi, -10, 50, colors=colors, linestyles="--", zorder=4)
+        ymin, ymax = ax[d].get_ylim()
+        ax[d].vlines(aligned_phi, ymin, ymax, colors=colors, linestyles="--", zorder=4)
         ax[d].set_xlabel(r"Progress value $\varphi$")
         ax[d].set_ylabel(r"Cartesian dimension $\xi_{%d}$" % (d + 1))
         ax[d].grid(True)
