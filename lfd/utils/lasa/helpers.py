@@ -108,3 +108,85 @@ def load_data(key: Union[str, int], show_plot: bool = False):
     x = x.reshape(-1, 2)
     xd = xd.reshape(-1, 2)
     return data, x, xd
+
+
+def plot_curves3(x, alpha=1):
+    """
+    plots 2d curves
+
+    params:
+        x: array of shape (number of curves,n_steps_per_curve,2)
+    """
+    for t in range(x.shape[0]):
+        plt.scatter(x[t][0, 0], x[t][0, 1], c="k")
+        plt.scatter(x[t][-1, 0], x[t][-1, 1], c="b")
+        plt.plot(x[t][:, 0], x[t][:, 1], alpha=alpha)
+
+
+# plotting the transformation axes
+def plot_frame(A, b, scale=1):
+    """
+    for plotting x and y axis of frames
+    """
+    plt.arrow(*b[1:], *(A[1:, 1] * scale), color="b")
+    plt.arrow(*b[1:], *(A[1:, 2] * scale), color="r")
+
+
+# transformation matrix
+def getA(a1):
+    a1 = a1 / np.linalg.norm(a1)
+    rot_mat = np.array(
+        [
+            [np.cos(np.pi / 2), -np.sin(np.pi / 2)],
+            [np.sin(np.pi / 2), np.cos(np.pi / 2)],
+        ]
+    )
+    a2 = rot_mat @ a1
+    A = np.eye(3)
+    A[1:][:, 1] = a1
+    A[1:][:, 2] = a2
+    return A
+
+
+# load lasa data, note that here Data is 3 dimension (in additional to space , time dimensional is added)
+# assumption is that time goes from 0 to 1 sec
+def load_data3(letter: str):
+    letter2id = dict(c=2, j=6, s=24)
+    _, x, _, _, _, _ = load_lasa(letter2id[letter.lower()])
+    time = np.linspace(0, 1, x.shape[1])
+    time = np.tile(time[None, ..., None], (x.shape[0], 1, 1))
+    Data = np.concatenate([time, x], axis=-1)
+    print(f"{Data.shape=}")
+    return Data, time
+
+
+# plotting trajectories
+# choosing the frames(x axis of the frames in the direction of starting and ending of trajectory)
+# As are orientation, Bs are origin of the frames
+def plot_trajectories(Data):
+    plot_curves3(Data[:, :, 1:], alpha=0.5)
+    scale = 10
+    As = []
+    Bs = []
+    for e, d in enumerate(Data):
+        a1 = (d[100] - d[0])[1:]
+        A1 = getA(a1)
+        b1 = d[0]
+        b1[0] = 0
+        plot_frame(A1, b1, scale)
+
+        a2 = (d[-100] - d[-1])[1:]
+        A2 = getA(a2)
+        b2 = d[-1]
+        b2[0] = 0
+        plot_frame(A2, b2, scale)
+
+        As.append([A1, A2])
+        Bs.append([b1, b2])
+    As = np.array(As)
+    As = np.transpose(As, (1, 0, 2, 3))
+    Bs = np.array(Bs)
+    Bs = np.transpose(Bs, (1, 0, 2))
+    print(f"{As.shape=}")
+    print(f"{Bs.shape=}")
+    return As, Bs

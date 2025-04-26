@@ -9,10 +9,11 @@ from typing import Union
 import numpy as np
 import pyro
 import torch
+from numpy.typing import NDArray
 from shapely import LineString
 
 from .frames import DemonstrationSet, append_progress_values
-from .lasa import load_data
+from .lasa import load_data, load_data3, plot_trajectories
 
 
 def set_seed(seed: int = 42):
@@ -48,3 +49,41 @@ def prepare_data(dset: DemonstrationSet, include_phi: bool = True):
     X_flat = X.reshape(-1, 3)  # Shape (N*(L−1), 2 or 3)
     Y_flat = Y.reshape(-1, 3)  # Shape (N*(L−1), 2 or 3)
     return X_flat, Y_flat
+
+
+def load_fdset(key: str) -> NDArray:
+    """Load a dataset including frames."""
+    Data, time = load_data3(key)
+    As, Bs = plot_trajectories(Data)
+
+    n_frames = 2
+    n_traj, n_length, n_dim = Data.shape
+    X = [Data]
+    for m in range(n_frames):
+        Dm = []
+        for n in range(n_traj):
+            _0_dn = Data[n]
+            Hm = As[m, n]
+            tm = Bs[m, n]
+            _m_dn = _0_dn @ Hm + tm
+            Dm.append(_m_dn)
+        Dm = np.array(Dm)
+        X.append(Dm)
+    X = np.array(X)  # (n_frames+1, n_traj, n_length, n_dim)
+    return X
+
+
+def load_fdset2(key: str) -> NDArray:
+    """Load a dataset including frames."""
+    Data, time = load_data3(key)
+    As, Bs = plot_trajectories(Data)
+
+    n_frames = 2
+    X = [Data]
+    for m in range(n_frames):
+        Hm = As[m]  # (n_traj, n_dim, n_dim)
+        tm = Bs[m]  # (n_traj, n_dim)
+        Dm = np.einsum("nld,ndk->nlk", Data, Hm) + tm[:, None, :]
+        X.append(Dm)
+    X = np.stack(X, axis=0)  # (n_frames+1, n_traj, n_length, n_dim)
+    return X
