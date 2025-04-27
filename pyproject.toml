@@ -14,6 +14,7 @@ keywords = [
 requires-python = ">=3.10"
 dependencies = [
     "deprecated>=1.2.18",
+    "gpytorch>=1.14",
     "manim>=0.19.0",
     "matplotlib>=3.9.4",
     "numpy>=2.0.2",

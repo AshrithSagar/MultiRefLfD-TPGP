@@ -15,7 +15,7 @@ from .lasa import (
     plot_curves,
     plot_trajectories,
 )
-from .utils import load_fdset, set_seed, transform_data
+from .utils import get_frames, load_fdset, set_seed, transform_data
 
 __all__ = [
     "__root__",
@@ -30,9 +30,10 @@ __all__ = [
     "exps_dir",
     "Frame",
     "FrameRelevanceGP",
+    "get_frames",
     "GlobalFrame",
-    "load_data",
     "load_data_with_phi",
+    "load_data",
     "load_fdset",
     "load_lasa",
     "LocalPolicyGP",

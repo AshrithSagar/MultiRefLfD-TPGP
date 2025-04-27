@@ -5,206 +5,222 @@ Gaussian processes utils
 
 from typing import List, Tuple
 
-import pyro.contrib.gp as gp
-import pyro.contrib.gp.kernels as kernels
-import pyro.contrib.gp.likelihoods as likelihoods
+import gpytorch
 import torch
-import torch.optim as optim
-from numpy.typing import NDArray
-from pyro.infer import SVI, Trace_ELBO
-from pyro.optim import ClippedAdam, PyroOptim
+import torch.nn as nn
 from torch import Tensor
 
 
-# TODO: Verify
-class LocalPolicyGP:
-    """
-    Local policy modeled as independent Gaussian Processes for each output dimension.
-    Uses a Matérn 5/2 kernel and sparse variational approximation with Gaussian likelihood.
-    """
+class SingleOutputGPModel(gpytorch.models.ApproximateGP):
+    """Model for a single output dimension"""
 
-    def __init__(
-        self,
-        X: NDArray,
-        Y: NDArray,
-        Xu: NDArray,
-        noise: float = 1e-2,
-        lr: float = 1e-2,
-    ) -> None:
+    def __init__(self, inducing_points: Tensor):
         """
-        :param X: Training inputs, shape (N, D_in)
-        :param Y: Training outputs, shape (N, D_out)
-        :param Xu: Inducing inputs, shape (M, D_in)
-        :param noise: Observation noise
-        :param lr: Learning rate for optimizer
+        :param inducing_points: Inducing points for the GP model
         """
-        self.X = torch.tensor(X, dtype=torch.float32)
-        self.Y = torch.tensor(Y, dtype=torch.float32)
-        self.output_dim = self.Y.shape[1]
+        variational_distribution = gpytorch.variational.CholeskyVariationalDistribution(
+            inducing_points.size(0)
+        )
+        variational_strategy = gpytorch.variational.VariationalStrategy(
+            self,
+            inducing_points,
+            variational_distribution,
+            learn_inducing_locations=True,
+        )
+        super().__init__(variational_strategy)
 
-        # Build one sparse GP per output dimension
-        self.models: List[gp.models.VariationalSparseGP] = []
-        for i in range(self.output_dim):
-            kernel = kernels.Matern32(input_dim=self.X.shape[1])
-            lik = likelihoods.Gaussian(variance=torch.tensor(noise))
-            gpr = gp.models.VariationalSparseGP(
-                self.X,
-                self.Y[:, i],
-                kernel,
-                Xu=torch.tensor(Xu, dtype=torch.float32),
-                likelihood=lik,
-            )
-            self.models.append(gpr)
+        self.mean_module = gpytorch.means.ConstantMean()
+        self.covar_module = gpytorch.kernels.ScaleKernel(
+            gpytorch.kernels.MaternKernel(nu=2.5)
+        )
 
-        # Set up optimizer and SVI
-        self.optim: PyroOptim = ClippedAdam({"lr": lr})
-        self.elbo = Trace_ELBO()
-        self.svis = [
-            SVI(m.model, m.guide, self.optim, loss=self.elbo) for m in self.models
+    def forward(self, x: Tensor):
+        """
+        Compute the forward pass of the GP model.
+
+        :param x: Input tensor of shape (batch_size, input_dim)
+        :return: MultivariateNormal distribution
+        """
+        mean_x = self.mean_module(x)
+        covar_x = self.covar_module(x)
+        return gpytorch.distributions.MultivariateNormal(mean_x, covar_x)
+
+
+class LocalPolicyGP(nn.Module):
+    """
+    Multi-output GP model for local policy learning.
+    Trains one GP per output dimension.
+    """
+
+    def __init__(self, input_dim: int, output_dim: int, num_inducing=128):
+        """
+        :param input_dim: Input dimension
+        :param output_dim: Output dimension
+        :param num_inducing: Number of inducing points for each GP
+        """
+        super().__init__()
+        self.models = nn.ModuleList(
+            [
+                SingleOutputGPModel(torch.randn(num_inducing, input_dim))
+                for _ in range(output_dim)
+            ]
+        )
+        self.likelihoods = nn.ModuleList(
+            [gpytorch.likelihoods.GaussianLikelihood() for _ in range(output_dim)]
+        )
+
+    def train_model(
+        self, train_x: Tensor, train_y: Tensor, num_epochs: int = 100, lr: float = 0.01
+    ):
+        """
+        Train the model using the provided training data.
+
+        :param train_x: Input tensor of shape (batch_size, input_dim)
+        :param train_y: Output tensor of shape (batch_size, output_dim)
+        :param num_epochs: Number of training epochs
+        :param lr: Learning rate for the optimizer
+        """
+        self.train()
+        mlls = [
+            gpytorch.mlls.VariationalELBO(likelihood, model, train_y.size(0))
+            for likelihood, model in zip(self.likelihoods, self.models)
         ]
+        optimizer = torch.optim.Adam(self.parameters(), lr=lr)
 
-    def train(self, num_steps: int = 1000, log_every: int = 100) -> None:
+        for epoch in range(num_epochs):
+            optimizer.zero_grad()
+            loss: Tensor = 0
+            for i in range(len(self.models)):
+                output = self.models[i](train_x)
+                loss += -mlls[i](output, train_y[:, i])
+            loss.backward()
+            optimizer.step()
+
+    def predict(self, test_x: Tensor) -> Tuple[Tensor, Tensor]:
         """
-        Train each local GP by maximizing the ELBO.
+        Predict mean and variance for each output dimension.
+
+        :param test_x: Input tensor of shape (batch_size, input_dim)
+        :return mean: Mean tensor of shape (batch_size, output_dim)
+        :return var: Variance tensor of shape (batch_size, output_dim)
         """
-        for step in range(num_steps):
-            losses = [svi.step() for svi in self.svis]
-            if log_every and step % log_every == 0:
-                print(f"[LocalPolicyGP] Step {step} ELBO loss: {sum(losses):.4f}")
+        self.eval()
+        pred_means: List[Tensor] = []
+        pred_vars: List[Tensor] = []
+        with torch.no_grad(), gpytorch.settings.fast_pred_var():
+            for model, likelihood in zip(self.models, self.likelihoods):
+                preds: gpytorch.likelihoods.Likelihood = likelihood(model(test_x))
+                pred_means.append(preds.mean.unsqueeze(1))
+                pred_vars.append(preds.variance.unsqueeze(1))
+        mean = torch.cat(pred_means, dim=1)
+        var = torch.cat(pred_vars, dim=1)
+        return mean, var
 
-    def predict(self, X_new: NDArray) -> Tuple[NDArray, NDArray]:
+    def stabilized_predict(self, test_x, beta: float = 2.0) -> Tensor:
         """
-        Predict mean and variance for new inputs.
+        Predict with stabilization based on the gradient of the variance.
 
-        :param X_new: Inputs, shape (K, D_in)
-        :return: mean (K, D_out), var (K, D_out)
+        :param test_x: Input tensor of shape (batch_size, input_dim)
+        :param beta: Scaling factor for stabilization
+        :return: Stabilized mean prediction
         """
-        mu: Tensor
-        var: Tensor
+        mean, var = self.predict(test_x)
+        grad_var = torch.autograd.grad(
+            outputs=var.sum(),
+            inputs=test_x,
+            create_graph=True,
+            retain_graph=True,
+            only_inputs=True,
+        )[0]
+        direction = -grad_var / (grad_var.norm(dim=1, keepdim=True) + 1e-8)
+        stabilization = beta * var.sum(dim=1, keepdim=True) * direction
+        return mean + stabilization
 
-        X_new_t = torch.tensor(X_new, dtype=torch.float32)
-        means, vars_ = [], []
-        for m in self.models:
-            mu, var = m(X_new_t, full_cov=False)
-            means.append(mu.detach())
-            vars_.append(var.detach())
-        means_t = torch.stack(means, dim=1)  # (K, D_out)
-        vars_t = torch.stack(vars_, dim=1)
-        return means_t.numpy(), vars_t.numpy()
 
-
-# TODO: Verify
-class FrameRelevanceGP:
+class FrameRelevanceGP(nn.Module):
     """
-    Frame relevance modeled as a single sparse GP over the progress scalar phi,
-    with separate variational inducing weights. Outputs softmax-normalized
-    relevance weights for each frame.
+    Frame relevance model in multi-frame learning.
+    Predicts relevance scores for each frame based on progress values.
     """
 
-    def __init__(
+    def __init__(self, n_frames: int, num_inducing: int = 32):
+        """
+        :param n_frames: Number of frames
+        :param num_inducing: Number of inducing points for each GP
+        """
+        super().__init__()
+        self.n_frames = n_frames
+        self.models = nn.ModuleList(
+            [SingleOutputGPModel(torch.randn(num_inducing, 1)) for _ in range(n_frames)]
+        )
+        self.likelihoods = nn.ModuleList(
+            [gpytorch.likelihoods.GaussianLikelihood() for _ in range(n_frames)]
+        )
+
+    def predict_alpha(self, phi):
+        """Predict raw relevance scores"""
+        self.eval()
+        alphas = []
+        with torch.no_grad(), gpytorch.settings.fast_pred_var():
+            for model, likelihood in zip(self.models, self.likelihoods):
+                preds: gpytorch.likelihoods.Likelihood = likelihood(model(phi))
+                alphas.append(preds.mean.squeeze(-1))  # Each alpha is (batch_size,)
+        alphas = torch.stack(alphas, dim=1)  # Shape: (batch_size, n_frames)
+        # Softmax normalization so they sum to 1 across frames
+        return torch.softmax(alphas, dim=1)
+
+    def train_self_supervised(
         self,
-        phi: NDArray,
-        num_frames: int,
-        Xu: NDArray,
-        noise: float = 1e-2,
-        lr: float = 1e-2,
-    ) -> None:
+        phi_train,
+        val_x_global,
+        val_delta_x,
+        local_policies,
+        frame_transforms,
+        num_epochs: int = 100,
+        lr: float = 0.01,
+    ):
         """
-        :param phi: Progress values, shape (N,)
-        :param num_frames: Number of frames (i.e., GP outputs)
-        :param Xu: Inducing inputs for the GP, shape (M, 1)
-        :param noise: Observation noise
-        :param lr: Learning rate
+        Self-supervised training
+
+        :param phi_train: Progress values (n_samples, 1)
+        :param val_x_global: Validation states in global frame (n_samples, input_dim)
+        :param val_delta_x: Validation true delta in global frame (n_samples, output_dim)
+        :param local_policies: List of trained LocalPolicyGP, one per frame
+        :param frame_transforms: List of (rotation, translation) matrices per frame
         """
-        self.phi = torch.tensor(phi.reshape(-1, 1), dtype=torch.float32)
-        self.num_frames = num_frames
-        self.Xu = torch.tensor(Xu.reshape(-1, 1), dtype=torch.float32)
+        self.train()
+        optimizer = torch.optim.Adam(self.parameters(), lr=lr)
 
-        # Variational parameters (u) for each frame: shape (num_frames, M)
-        M = self.Xu.shape[0]
-        self.u = torch.nn.Parameter(torch.zeros(num_frames, M))
+        for epoch in range(num_epochs):
+            optimizer.zero_grad()
 
-        # Kernel and prior covariance
-        self.kernel = kernels.Matern32(input_dim=1)
-        Kuu = self.kernel(self.Xu, self.Xu) + noise * torch.eye(M)
-        self.Kuu_inv = torch.inverse(Kuu)
+            # Predict frame relevance alpha(phi)
+            alpha_weights = self.predict_alpha(phi_train)
 
-        # Optimizer for variational weights
-        self.optimizer = optim.Adam([self.u], lr=lr)
+            # Predict local deltas for each frame
+            local_preds = []
+            for m, local_policy in enumerate(local_policies):
+                # Transform global x into local frame
+                R, t = frame_transforms[m]
 
-    def predict_raw(self, phi_new: Tensor) -> Tensor:
-        """
-        Compute raw (unnormalized) relevance scores for new progress values.
+                # Only position, not progress
+                x_local = (val_x_global[:, :-1] - t) @ R.T
 
-        :param phi_new: Torch tensor, shape (K, 1)
-        :return: raw scores tensor of shape (K, num_frames)
-        """
-        # Compute cross-covariances
-        Kxz = self.kernel(phi_new, self.Xu)  # (K, M)
-        # Sparse GP predictive mean: Kxz @ Kuu_inv @ u[m]
-        # For each frame m, use u[m] row
-        raw = Kxz @ (self.Kuu_inv @ self.u.T)  # (K, num_frames)
-        return raw
+                x_local_phi = torch.cat([x_local, val_x_global[:, -1:]], dim=1)
+                mean_local, _ = local_policy.predict(x_local_phi)
 
-    def predict(self, phi_new: NDArray) -> NDArray:
-        """
-        Compute normalized relevance weights.
+                # Transform delta back to global
+                mean_global = mean_local @ R
 
-        :param phi_new: New progress array, shape (K,)
-        :return: relevance weights, shape (K, num_frames)
-        """
-        phi_t = torch.tensor(phi_new.reshape(-1, 1), dtype=torch.float32)
-        raw = self.predict_raw(phi_t)
-        alpha = torch.softmax(raw, dim=1)
-        return alpha.detach().numpy()
+                local_preds.append(mean_global)
 
-    def train(
-        self,
-        phi: NDArray,
-        local_means: NDArray,
-        local_vars: NDArray,
-        deltas: NDArray,
-        num_steps: int = 1000,
-        log_every: int = 100,
-    ) -> None:
-        """
-        Self-supervised training using the local means and variances of the GP outputs.
-        The training objective is to minimize the negative log-likelihood of the
-        deltas under the Gaussian distribution defined by the local means and variances.
-        The relevance weights are learned by maximizing the ELBO.
-        This is done by optimizing the variational parameters u.
+            # (n_samples, output_dim, n_frames)
+            local_preds = torch.stack(local_preds, dim=2)
 
-        :param phi: Progress values, shape (N,)
-        :param local_means: Local means, shape (N, num_frames, D_out)
-        :param local_vars: Local variances, shape (N, num_frames, D_out)
-        :param deltas: Deltas, shape (N, D_out)
-        :param num_steps: Number of training steps
-        :param log_every: Log every log_every steps
-        """
-        phi_t = torch.tensor(phi.reshape(-1, 1), dtype=torch.float32)
-        mus_t = torch.tensor(local_means, dtype=torch.float32)
-        vars_t = torch.tensor(local_vars, dtype=torch.float32)
-        deltas_t = torch.tensor(deltas, dtype=torch.float32)
+            # Weighted sum of predictions
+            weighted_mean = (local_preds * alpha_weights.unsqueeze(1)).sum(dim=2)
 
-        for step in range(num_steps):
-            # Predict relevance
-            raw = self.predict_raw(phi_t)  # (N, num_frames)
-            alpha = torch.softmax(raw, dim=1)  # (N, num_frames)
-
-            # Mixture mean and variance
-            # expand alpha to match output dim
-            alpha_exp = alpha.unsqueeze(2)  # (N, num_frames, 1)
-            mu_mix = (alpha_exp * mus_t).sum(dim=1)  # (N, D_out)
-            var_mix = (alpha_exp**2 * vars_t).sum(dim=1)  # (N, D_out)
-
-            # Negative log-likelihood under Gaussian
-            nll = 0.5 * (((deltas_t - mu_mix) ** 2) / var_mix).sum()
-            nll = nll + 0.5 * torch.log(var_mix).sum()
-
-            # Optimize
-            self.optimizer.zero_grad()
-            nll.backward(retain_graph=True)
-            self.optimizer.step()
-
-            if log_every and step % log_every == 0:
-                print(f"[FrameRelevanceGP] Step {step} NLL: {nll.item():.4f}")
+            # Negative log likelihood loss (assumes isotropic Gaussian)
+            loss = nn.functional.mse_loss(weighted_mean, val_delta_x)
+            loss.backward()
+            optimizer.step()

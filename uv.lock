@@ -683,6 +683,22 @@ wheels = [
 ]
 
 [[package]]
+name = "gpytorch"
+version = "1.14"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "jaxtyping" },
+    { name = "linear-operator" },
+    { name = "mpmath" },
+    { name = "scikit-learn" },
+    { name = "scipy" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/7a/70/7e925758468f924ffc6da9f6007b1d92e37455212d451c6c771cfa1c37fd/gpytorch-1.14.tar.gz", hash = "sha256:032cc11e6a46e1e4bc7763fcef318cc830aceaea85a7289f27b2288c7a339a8d", size = 2472710 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/0e/58/ac756b7c9b7daec0382d7c8e0b2c70819df227826edd8aa5bce115470d5a/gpytorch-1.14-py3-none-any.whl", hash = "sha256:9b17ff7bd70dc39c3a3c03eb2bb9a87aa4b840c26e71ac68d120b96487bf5a12", size = 277740 },
+]
+
+[[package]]
 name = "graphviz"
 version = "0.20.3"
 source = { registry = "https://pypi.org/simple" }
@@ -865,6 +881,18 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/da/cf/bd7e70bb7b8dfd77afdc79aba8d83afd4a9263f045861cd4ddd34b7f6a12/isosurfaces-0.1.2.tar.gz", hash = "sha256:fa51ebe864ea9355b26830e27fdd6a41d5a58b419fa8d4b47e3b8b80718d6e21", size = 11348 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/b1/68/d5e9e6e0d6e43107d8393d2ee3d231dbb597bf93052c6f3117b313724980/isosurfaces-0.1.2-py3-none-any.whl", hash = "sha256:525a49ba93f4dbc35303cd2faf30976af0f99d9274cfa2787aec016b8ef96c64", size = 11649 },
+]
+
+[[package]]
+name = "jaxtyping"
+version = "0.3.2"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "wadler-lindig" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/88/a8/416bd7ea110ec6b68e8868b0f99c985c735adcf7badc491d3c343937260a/jaxtyping-0.3.2.tar.gz", hash = "sha256:f30483fac4b42e915db8ad2414a85c3b63284aa7d3c100b96b59f755cf4a86ad", size = 44989 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/c9/b9/281e10e2d967ea5e481683eaec99f55ac5a61085ee60551c36942ef32bef/jaxtyping-0.3.2-py3-none-any.whl", hash = "sha256:6a020fd276226ddb5ac4f5725323843dd65e3c7e85c64fd62431e5f738c74e04", size = 55409 },
 ]
 
 [[package]]
@@ -1268,6 +1296,21 @@ wheels = [
 ]
 
 [[package]]
+name = "linear-operator"
+version = "0.6"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "jaxtyping" },
+    { name = "mpmath" },
+    { name = "scipy" },
+    { name = "torch" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/c2/e9/c900e42b989e5778d0a28bb28aa63a5cef4f7e2f1af34b9de6157da77913/linear_operator-0.6.tar.gz", hash = "sha256:a9e2663879f1a2b28631bf7ef34892c4e5749893e711c8ef0ab0a39aff70a654", size = 185103 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/ed/c7/8a27fd8e182c611d4bf0aa9f0ea9046a7c843901d0f06c8cdcb599840a38/linear_operator-0.6-py3-none-any.whl", hash = "sha256:b7c30ce0f6599e19c1cb970e00811828df98783b20c1dd2f765928415012f41c", size = 176344 },
+]
+
+[[package]]
 name = "manim"
 version = "0.19.0"
 source = { registry = "https://pypi.org/simple" }
@@ -1596,6 +1639,7 @@ version = "0.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "deprecated" },
+    { name = "gpytorch" },
     { name = "manim" },
     { name = "matplotlib" },
     { name = "numpy" },
@@ -1618,6 +1662,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "deprecated", specifier = ">=1.2.18" },
+    { name = "gpytorch", specifier = ">=1.14" },
     { name = "manim", specifier = ">=0.19.0" },
     { name = "matplotlib", specifier = ">=3.9.4" },
     { name = "numpy", specifier = ">=2.0.2" },
@@ -3306,6 +3351,15 @@ dependencies = [
     { name = "websocket-client" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/69/e2/35025324ec0b7bc6999cbb7a4dc484268275bda4cb67708c82ebca015ffa/visdom-0.2.1.tar.gz", hash = "sha256:51bca4ba6cdcb098794a26b2a9458836834f98317999697ada248241c154ed5a", size = 1422841 }
+
+[[package]]
+name = "wadler-lindig"
+version = "0.1.5"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/36/75/bde0b7a9062fb0849a43cea2edce1bc98193d00ac1cab0f037f2d4ef60f3/wadler_lindig-0.1.5.tar.gz", hash = "sha256:c8d6c0e74fc61c7108077009238b7f5a5a52b25f75e024dac313393faf7f7440", size = 15606 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/f9/4e/ef53ee4a6bf563a7c0a33682d6fef7a96b6685821516e52596cd90a376cd/wadler_lindig-0.1.5-py3-none-any.whl", hash = "sha256:54f830ec0bdab41b28df8bc91be4596c6cc8cf9772b3b5c7cd5922d2ba5073b7", size = 20390 },
+]
 
 [[package]]
 name = "watchdog"
