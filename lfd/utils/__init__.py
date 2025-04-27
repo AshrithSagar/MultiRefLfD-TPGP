@@ -16,7 +16,7 @@ from .lasa import (
     plot_curves3,
     plot_trajectories,
 )
-from .utils import load_dset, load_fdset, load_fdset2, prepare_data, set_seed
+from .utils import load_fdset, set_seed, transform_data
 
 __all__ = [
     "__root__",
@@ -34,9 +34,7 @@ __all__ = [
     "GlobalFrame",
     "load_data",
     "load_data3",
-    "load_dset",
     "load_fdset",
-    "load_fdset2",
     "load_lasa",
     "LocalPolicyGP",
     "plot_alignments",
@@ -44,6 +42,6 @@ __all__ = [
     "plot_curves3",
     "plot_keypoints",
     "plot_trajectories",
-    "prepare_data",
     "set_seed",
+    "transform_data",
 ]

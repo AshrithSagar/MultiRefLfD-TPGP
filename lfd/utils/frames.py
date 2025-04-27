@@ -26,10 +26,10 @@ class Frame:
         A frame has a rotation matrix and a translation vector
         with respect to a reference (global) frame.
         Rotations are with respect to the origin (0, 0).
-        Parameters:
-            index: Frame identifier
-            rotation: Rotation angle (in degrees)
-            translation: Translation vector (2D)
+
+        :param index: Frame identifier
+        :param rotation: Rotation angle (in degrees)
+        :param translation: Translation vector (2D)
         """
         self.index = index
         self.rotation = rotation
@@ -49,17 +49,14 @@ class Frame:
         """
         Transform a point from the global frame to this frame,
         without affecting the progress values.
-        Parameters:
-            dset: A list of demonstrations (LineString objects with progress values).
-            frame: The frame to transform to.
-        Returns:
-            A list of transformed demonstrations.
+
+        :param dset: A list of demonstrations (LineString objects with progress values).
+        :param frame: The frame to transform to.
+        :return: A list of transformed demonstrations.
         """
         assert dset[0].has_z, "Progress values missing in demonstration set"
         return [self._t(self._R(d)) for d in dset]
 
 
-GlobalFrame = Frame(0)
-"""Global frame (reference) with index 0."""
 GlobalFrame = Frame(0)
 """Global frame (reference) with index 0."""

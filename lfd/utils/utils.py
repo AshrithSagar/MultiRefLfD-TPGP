@@ -4,16 +4,14 @@ General utilities
 """
 
 import random
-from typing import Union
+from typing import List
 
 import numpy as np
 import pyro
 import torch
 from numpy.typing import NDArray
-from shapely import LineString
 
-from .demonstrations import DemonstrationSet, append_progress_values
-from .lasa import load_data, load_data3, plot_trajectories
+from .lasa import getA, load_data3
 
 
 def set_seed(seed: int = 42):
@@ -26,64 +24,93 @@ def set_seed(seed: int = 42):
         torch.cuda.manual_seed_all(seed)
 
 
-def load_dset(key: Union[str, int], show_plot: bool = False) -> DemonstrationSet:
-    """Load a dataset and convert it to a DemonstrationSet."""
-    data, _, _ = load_data(key, show_plot)
-    dset = append_progress_values([LineString(traj) for traj in data])
-    return dset
-
-
-def prepare_data(dset: DemonstrationSet, include_phi: bool = True):
-    """
-    Turn a DemonstrationSet of shape (N demos, L points, 3 coords)
-    into X and Y matrices for GP training.
-
-    :return X: [xi, phi] at time t
-    :return Y: Delta xi = xi(t+1) − xi(t), Delta phi = phi(t+1) − phi(t)
-    """
-    arr = np.stack([np.array(d.coords) for d in dset])  # Shape (N, L, 3)
-    X = arr[:, :-1, : 3 if include_phi else 2]  # Shape (N, L−1, 2 or 3)
-    Y = arr[:, 1:, : 3 if include_phi else 2] - X  # Shape (N, L−1, 2 or 3)
-
-    # Flatten demos & timesteps
-    X_flat = X.reshape(-1, 3)  # Shape (N*(L−1), 2 or 3)
-    Y_flat = Y.reshape(-1, 3)  # Shape (N*(L−1), 2 or 3)
-    return X_flat, Y_flat
-
-
 def load_fdset(key: str) -> NDArray:
-    """Load a dataset including frames."""
-    Data, time = load_data3(key)
-    As, Bs = plot_trajectories(Data)
+    """
+    Load and transform dataset.
 
-    n_frames = 2
-    n_traj, n_length, n_dim = Data.shape
-    X = [Data]
+    :param key: Key to load the dataset.
+    :return: Transformed demonstration set (n_frames+1, n_traj, n_length, n_dim)
+    """
+    Data, time = load_data3(key)
+    As, Bs = get_frames(Data)
+    fdset = transform_data(Data, As, Bs)
+    return fdset
+
+
+def get_frames(Data):
+    """
+    Computes orientation (As) and origin (Bs) of start and end frames for each trajectory.
+
+    :param Data: ndarray of shape (n_traj, n_length, 3) with time, x, y.
+    :return As: shape (2, n_traj, 3, 3) - Transformation matrices
+    :return Bs: shape (2, n_traj, 3) - Origins of the frames / Translation vectors
+    """
+    As = []
+    Bs = []
+    for d in Data:
+        a1 = (d[100] - d[0])[1:]
+        A1 = getA(a1)
+        b1 = d[0].copy()
+        b1[0] = 0
+
+        a2 = (d[-100] - d[-1])[1:]
+        A2 = getA(a2)
+        b2 = d[-1].copy()
+        b2[0] = 0
+
+        As.append([A1, A2])
+        Bs.append([b1, b2])
+
+    As = np.array(As).transpose(1, 0, 2, 3)
+    Bs = np.array(Bs).transpose(1, 0, 2)
+    return As, Bs
+
+
+def transform_data(D0: NDArray, As: NDArray, Bs: NDArray) -> NDArray:
+    """
+    Transform data using transformation matrices and translation vectors.
+
+    :param D0: Demonstration set in global frame to be transformed (n_traj, n_length, n_dim)
+    :param As: Transformation matrices (n_frames, n_traj, n_dim, n_dim)
+    :param Bs: Translation vectors (n_frames, n_traj, n_dim)
+    :return: Transformed demonstration set (n_frames+1, n_traj, n_length, n_dim)
+    """
+    X = [D0]
+    n_frames = As.shape[0]
+    n_traj, n_length, n_dim = D0.shape
+
     for m in range(n_frames):
-        Dm = []
+        Dm: List[NDArray] = []
         for n in range(n_traj):
-            _0_dn = Data[n]
-            Hm = As[m, n]
-            tm = Bs[m, n]
-            _m_dn = _0_dn @ Hm + tm
+            _0_dn: NDArray = D0[n]  # (n_length, n_dim)
+            Hm: NDArray = As[m, n]  # (n_dim, n_dim)
+            tm: NDArray = Bs[m, n]  # (n_dim,)
+            _m_dn = _0_dn @ Hm + tm  # (n_length, n_dim)
             Dm.append(_m_dn)
-        Dm = np.array(Dm)
+        Dm = np.array(Dm)  # (n_traj, n_length, n_dim)
         X.append(Dm)
+
     X = np.array(X)  # (n_frames+1, n_traj, n_length, n_dim)
     return X
 
 
-def load_fdset2(key: str) -> NDArray:
-    """Load a dataset including frames."""
-    Data, time = load_data3(key)
-    As, Bs = plot_trajectories(Data)
+def transform_data2(D0: NDArray, As: NDArray, Bs: NDArray) -> NDArray:
+    """
+    Transform data using transformation matrices and translation vectors.
 
-    n_frames = 2
-    X = [Data]
+    :param D0: Demonstration set in global frame to be transformed (n_traj, n_length, n_dim)
+    :param As: Transformation matrices (n_frames, n_traj, n_dim, n_dim)
+    :param Bs: Translation vectors (n_frames, n_traj, n_dim)
+    :return: Transformed demonstration set (n_frames+1, n_traj, n_length, n_dim)
+    """
+    X = [D0]
+    n_frames = As.shape[0]
+
     for m in range(n_frames):
         Hm = As[m]  # (n_traj, n_dim, n_dim)
         tm = Bs[m]  # (n_traj, n_dim)
-        Dm = np.einsum("nld,ndk->nlk", Data, Hm) + tm[:, None, :]
+        Dm = np.einsum("nld,ndk->nlk", D0, Hm) + tm[:, None, :]
         X.append(Dm)
+
     X = np.stack(X, axis=0)  # (n_frames+1, n_traj, n_length, n_dim)
     return X
