@@ -171,56 +171,42 @@ class FrameRelevanceGP(nn.Module):
 
     def train_self_supervised(
         self,
-        phi_train,
-        val_x_global,
-        val_delta_x,
-        local_policies,
-        frame_transforms,
+        local_policies: List[LocalPolicyGP],
+        As: Tensor,
+        X_val: Tensor,
+        Y_val: Tensor,
         num_epochs: int = 100,
         lr: float = 0.01,
     ):
         """
         Self-supervised training
 
-        :param phi_train: Progress values (n_samples, 1)
-        :param val_x_global: Validation states in global frame (n_samples, input_dim)
-        :param val_delta_x: Validation true delta in global frame (n_samples, output_dim)
         :param local_policies: List of trained LocalPolicyGP, one per frame
-        :param frame_transforms: List of (rotation, translation) matrices per frame
+        :param As: (n_frames, rotation) matrices per frame
+        :param X_val: Validation demonstration states in global frame (n_frames, n_length, n_dim)
+        :param Y_val: Validation demonstration labels in global frame (n_frames, n_length, output_dim)
         """
         self.train()
         optimizer = torch.optim.Adam(self.parameters(), lr=lr)
+        n_frames, n_length, n_dim = X_val.shape
 
         for epoch in range(num_epochs):
             optimizer.zero_grad()
 
-            # Predict frame relevance alpha(phi)
-            alpha_weights = self.predict_alpha(phi_train)
+            mean_preds = torch.zeros(n_frames - 1, n_length, n_dim)
+            var_preds = torch.zeros(n_frames - 1, n_length, n_dim, n_dim)
+            for t in range(n_length):
+                for m, local_policy in enumerate(local_policies, start=1):
+                    phi_local = X_val[m, t, 0]
+                    alpha_weights = self.predict_alpha(phi_local)  # (n_frames,)
+                    for i in range(n_dim):
+                        _m_mu_i, _m_var_i = local_policy.predict(X_val[m, t, i])
+                        mean_preds[m, t] = As[m].T @ _m_mu_i
+                        var_preds[m, t] = As[m].T @ _m_var_i @ As[m]
+                weighted_mean = (mean_preds * alpha_weights.unsqueeze(1)).sum(dim=0)
+                weighted_var = (var_preds * alpha_weights.unsqueeze(1)).sum(dim=0)
 
-            # Predict local deltas for each frame
-            local_preds = []
-            for m, local_policy in enumerate(local_policies):
-                # Transform global x into local frame
-                R, t = frame_transforms[m]
-
-                # Only position, not progress
-                x_local = (val_x_global[:, :-1] - t) @ R.T
-
-                x_local_phi = torch.cat([x_local, val_x_global[:, -1:]], dim=1)
-                mean_local, _ = local_policy.predict(x_local_phi)
-
-                # Transform delta back to global
-                mean_global = mean_local @ R
-
-                local_preds.append(mean_global)
-
-            # (n_samples, output_dim, n_frames)
-            local_preds = torch.stack(local_preds, dim=2)
-
-            # Weighted sum of predictions
-            weighted_mean = (local_preds * alpha_weights.unsqueeze(1)).sum(dim=2)
-
-            # Negative log likelihood loss (assumes isotropic Gaussian)
-            loss = nn.functional.mse_loss(weighted_mean, val_delta_x)
+            # Negative log likelihood
+            loss: Tensor = 0
             loss.backward()
             optimizer.step()
