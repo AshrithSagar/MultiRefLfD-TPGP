@@ -24,7 +24,7 @@ git clone https://github.com/AshrithSagar/MultiRefLfD-TPGP.git
 > [!TIP]
 > It is recommended to use `uv`, as it will automatically install the dependencies in a virtual environment.
 
-TL;DR:
+TL;DR: Just run
 
 ```shell
 curl -LsSf https://astral.sh/uv/install.sh | sh
