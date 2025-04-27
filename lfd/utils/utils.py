@@ -9,6 +9,7 @@ from typing import List
 import numpy as np
 import pyro
 import torch
+from deprecated import deprecated
 from numpy.typing import NDArray
 
 from .lasa import getA, load_data_with_phi
@@ -78,6 +79,22 @@ def transform_data(D0: NDArray, As: NDArray, Bs: NDArray) -> NDArray:
     """
     X = [D0]
     n_frames = As.shape[0]
+
+    for m in range(n_frames):
+        Hm = As[m]  # (n_traj, n_dim, n_dim)
+        tm = Bs[m]  # (n_traj, n_dim)
+        Dm = np.einsum("nld,ndk->nlk", D0, Hm) + tm[:, None, :]
+        X.append(Dm)
+
+    X = np.stack(X, axis=0)  # (n_frames+1, n_traj, n_length, n_dim)
+    return X
+
+
+# Alternate
+@deprecated
+def transform_data_2(D0: NDArray, As: NDArray, Bs: NDArray) -> NDArray:
+    X = [D0]
+    n_frames = As.shape[0]
     n_traj, n_length, n_dim = D0.shape
 
     for m in range(n_frames):
@@ -92,26 +109,4 @@ def transform_data(D0: NDArray, As: NDArray, Bs: NDArray) -> NDArray:
         X.append(Dm)
 
     X = np.array(X)  # (n_frames+1, n_traj, n_length, n_dim)
-    return X
-
-
-def transform_data2(D0: NDArray, As: NDArray, Bs: NDArray) -> NDArray:
-    """
-    Transform data using transformation matrices and translation vectors.
-
-    :param D0: Demonstration set in global frame to be transformed (n_traj, n_length, n_dim)
-    :param As: Transformation matrices (n_frames, n_traj, n_dim, n_dim)
-    :param Bs: Translation vectors (n_frames, n_traj, n_dim)
-    :return: Transformed demonstration set (n_frames+1, n_traj, n_length, n_dim)
-    """
-    X = [D0]
-    n_frames = As.shape[0]
-
-    for m in range(n_frames):
-        Hm = As[m]  # (n_traj, n_dim, n_dim)
-        tm = Bs[m]  # (n_traj, n_dim)
-        Dm = np.einsum("nld,ndk->nlk", D0, Hm) + tm[:, None, :]
-        X.append(Dm)
-
-    X = np.stack(X, axis=0)  # (n_frames+1, n_traj, n_length, n_dim)
     return X

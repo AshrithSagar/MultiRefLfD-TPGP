@@ -8,8 +8,10 @@ from typing import List, Optional
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
+from deprecated import deprecated
 from numpy.typing import NDArray
 from scipy.interpolate import interp1d
+from scipy.spatial.distance import cdist
 
 
 def phi2index(dn: NDArray, phi: float) -> int:
@@ -63,6 +65,33 @@ def computeP(fdset: NDArray) -> NDArray:
     :param fdset: Transformed demonstration set (n_frames, n_traj, n_length, n_dim)
     :return P: P matrix (n_frames, n_traj)
     """
+    n_frames, n_traj, n_length, n_dim = fdset.shape
+    n_frames -= 1
+
+    A = np.zeros((n_frames, n_traj, n_traj), dtype=int)
+    B = np.zeros((n_frames, n_traj, n_traj), dtype=float)
+
+    for m in range(1, n_frames + 1):
+        Dm = fdset[m]  # (n_traj, n_length, n_dim)
+        for i in range(n_traj):
+            _m_xi = Dm[i]  # (n_length, n_dim)
+
+            # Precompute distances between _m_xi and all _m_xj
+            # (n_traj, n_length, n_length)
+            dists_all = np.array([cdist(_m_xi, Dm[j]) for j in range(n_traj)])
+            min_dist_per_point = np.min(dists_all, axis=2)  # (n_traj, n_length)
+
+            h = np.argmin(min_dist_per_point, axis=1)  # (n_traj,)
+            A[m - 1, i, :] = h
+            B[m - 1, i, :] = Dm[np.arange(n_traj), h, 0]  # phi
+
+    P = np.median(B, axis=2)  # (n_frames, n_traj)
+    return P
+
+
+# Alternate
+@deprecated
+def computeP_2(fdset: NDArray) -> NDArray:
     n_frames, n_traj, n_length, n_dim = fdset.shape
     n_frames -= 1
 
