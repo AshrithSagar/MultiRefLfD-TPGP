@@ -12,7 +12,7 @@ import torch
 from numpy.typing import NDArray
 from shapely import LineString
 
-from .frames import DemonstrationSet, append_progress_values
+from .demonstrations import DemonstrationSet, append_progress_values
 from .lasa import load_data, load_data3, plot_trajectories
 
 

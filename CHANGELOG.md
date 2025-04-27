@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Load frames for LASA dataset
+
+### Changed
+
+- Demonstration utils shifted to `demonstrations.py`
+
+### Fixed
+
+- Alignment parts now correctly computes `D0_star`
+- Cleanup
+
 ## [v0.0.3] - 2025-04-25
 
 ### Added

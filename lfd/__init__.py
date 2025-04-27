@@ -3,10 +3,13 @@ lfd \n
 Learning from Demonstrations (LfD)
 """
 
-import matplotlib.pyplot as plt
-import numpy as np
-from shapely import LineString, Point
-
-from .utils import *
+from .utils import alignment, demonstrations, frames, set_seed
 
 set_seed(42)
+
+__all__ = [
+    "alignment",
+    "demonstrations",
+    "frames",
+    "set_seed",
+]
