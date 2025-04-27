@@ -11,12 +11,13 @@ import numpy as np
 from .lasa import load_lasa
 
 
-def plot_curves(x, show_start_end=True, **kwargs):
+def plot_curves(x, show_start_end=False, **kwargs):
     """
-    plots 2d curves of trajectories
+    Plot 2D curves of trajectories.
 
-    params:
-        x: array of shape (number of curves,n_steps_per_curve,2)
+    :param x: Data (n_traj, n_length, 2)
+    :param show_start_end: Show start and end points
+    :param kwargs: Additional parameters for plt.plot
     """
     if show_start_end:
         start_label, end_label = "start", "end"
@@ -29,21 +30,22 @@ def plot_curves(x, show_start_end=True, **kwargs):
         if t == 0:
             kwargs.pop("label", None)
             start_label, end_label = None, None
+    if show_start_end:
+        plt.legend()
 
-    plt.legend()
 
-
-def streamplot(f, x_axis=(0, 100), y_axis=(0, 100), n=1000, width=1, **kwargs):
+def streamplot(f, n=1000, x_axis=(0, 100), y_axis=(0, 100), width=1, **kwargs):
     """
-    helps visualizing the vector field.
+    Visualise the vector field.
+    The dynamical system (DS) function predicts the velocities as a function of the state.
+    x_dot = f(x); x_dot: (n_length, 2); x: (n_length, 2)
 
-    params:
-        f: function to predict the velocities in DS(Dynamical system : x_dot = f(x),x of shape (n_points,2),x_dot of shape (n_points,2))
-        x_axis: x axis limits
-        y_axis: y axis limits
-        n: number of points in each axis (so total n*n predictions happen)
-        width: width of the vector
-        **kwargs: goes into plt.streamplot
+    :param f: Dynamical system function
+    :param n: Number of points in each axis (Total n*n predictions happen)
+    :param x_axis: X-axis limits
+    :param y_axis: Y-axis limits
+    :param width: Width of the vector
+    :param **kwargs: Any additional params for plt.streamplot
     """
     a, b = np.linspace(x_axis[0], x_axis[1], n), np.linspace(y_axis[0], y_axis[1], n)
     X, Y = np.meshgrid(a, b)
@@ -56,19 +58,15 @@ def streamplot(f, x_axis=(0, 100), y_axis=(0, 100), n=1000, width=1, **kwargs):
     plt.streamplot(X, Y, U, V, linewidth=lw, **kwargs)
 
 
-# gets the velocity x_dot given x
 def derivative(x):
     """
-    difference method for calculating derivative
+    Difference method for calculating derivatives.
+    Gets the velocity x_dot given x.
 
-    params:
-        x: array of shape (number of trajectories,number of timesteps,2)
-
-    returns
-        xd: array of shape (number of trajectories,number of timesteps,2)
+    :param x: Original (n_traj, n_length, 2)
+    :return xd: Derivative (n_traj, n_length, 2)
     """
     xds = []
-
     for i in range(x.shape[0]):
         dt = 1 / (x[i].shape[0] - 1)
         xd = np.vstack((np.diff(x[i], axis=0) / dt, np.zeros((1, x[i].shape[1]))))
@@ -79,19 +77,14 @@ def derivative(x):
     return xd
 
 
-# loading the data and plotting
 def load_data(key: Union[str, int], show_plot: bool = False):
     """
-    gets the trajectories coresponding to the given letter
+    Gets the trajectories corresponding to the given letter
 
-    params:
-        letter: character in ["c","j","s"]
-
-    returns:
-        data: array of shape (number of trajectories,number of timesteps,2)
-        x: array of shape(number of trajectories*number of timesteps,2)
-        xd: array of shape(number of trajectories*number of timesteps,2)
-
+    :param key: Letter or index for a trajectory
+    :return data: (n_traj, n_length, 2)
+    :return x: (n_traj * n_length, 2)
+    :return xd: (n_traj * n_length, 2)
     """
     if isinstance(key, str):
         letter2id = dict(c=2, g=4, j=6, s=24)
@@ -99,41 +92,28 @@ def load_data(key: Union[str, int], show_plot: bool = False):
         _index = letter2id[key.lower()]
     elif isinstance(key, int):
         _index = key
+
     _, x, _, _, _, _ = load_lasa(_index)
     xd = derivative(x)
+
     if show_plot:
         plot_curves(x)
         plt.show()
+
     data = x
     x = x.reshape(-1, 2)
     xd = xd.reshape(-1, 2)
     return data, x, xd
 
 
-def plot_curves3(x, alpha=1):
-    """
-    plots 2d curves
-
-    params:
-        x: array of shape (number of curves,n_steps_per_curve,2)
-    """
-    for t in range(x.shape[0]):
-        plt.scatter(x[t][0, 0], x[t][0, 1], c="k")
-        plt.scatter(x[t][-1, 0], x[t][-1, 1], c="b")
-        plt.plot(x[t][:, 0], x[t][:, 1], alpha=alpha)
-
-
-# plotting the transformation axes
 def plot_frame(A, b, scale=1):
-    """
-    for plotting x and y axis of frames
-    """
+    """Plot the transformation axes of frames"""
     plt.arrow(*b[1:], *(A[1:, 1] * scale), color="b")
     plt.arrow(*b[1:], *(A[1:, 2] * scale), color="r")
 
 
-# transformation matrix
 def getA(a1):
+    """Transformation matrix"""
     a1 = a1 / np.linalg.norm(a1)
     rot_mat = np.array(
         [
@@ -148,23 +128,23 @@ def getA(a1):
     return A
 
 
-# load lasa data, note that here Data is 3 dimension (in additional to space , time dimensional is added)
-# assumption is that time goes from 0 to 1 sec
-def load_data3(letter: str):
+def load_data_with_phi(letter: str):
+    """
+    Load demonstrations with added progress values (phi) in dimension 0.
+    """
     letter2id = dict(c=2, j=6, s=24)
     _, x, _, _, _, _ = load_lasa(letter2id[letter.lower()])
     time = np.linspace(0, 1, x.shape[1])
     time = np.tile(time[None, ..., None], (x.shape[0], 1, 1))
-    Data = np.concatenate([time, x], axis=-1)
-    print(f"{Data.shape=}")
-    return Data, time
+    data = np.concatenate([time, x], axis=-1)
+    return data, time
 
 
 # plotting trajectories
 # choosing the frames(x axis of the frames in the direction of starting and ending of trajectory)
 # As are orientation, Bs are origin of the frames
 def plot_trajectories(Data):
-    plot_curves3(Data[:, :, 1:], alpha=0.5)
+    plot_curves(Data[:, :, 1:], alpha=0.5)
     scale = 10
     As = []
     Bs = []

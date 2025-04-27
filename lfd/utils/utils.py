@@ -11,7 +11,7 @@ import pyro
 import torch
 from numpy.typing import NDArray
 
-from .lasa import getA, load_data3
+from .lasa import getA, load_data_with_phi
 
 
 def set_seed(seed: int = 42):
@@ -31,23 +31,24 @@ def load_fdset(key: str) -> NDArray:
     :param key: Key to load the dataset.
     :return: Transformed demonstration set (n_frames+1, n_traj, n_length, n_dim)
     """
-    Data, time = load_data3(key)
-    As, Bs = get_frames(Data)
-    fdset = transform_data(Data, As, Bs)
+    data, time = load_data_with_phi(key)
+    As, Bs = get_frames(data)
+    fdset = transform_data(data, As, Bs)
     return fdset
 
 
-def get_frames(Data):
+def get_frames(data):
     """
     Computes orientation (As) and origin (Bs) of start and end frames for each trajectory.
+    The x-axis of the frames is in the direction of starting and ending of trajectory.
 
-    :param Data: ndarray of shape (n_traj, n_length, 3) with time, x, y.
-    :return As: shape (2, n_traj, 3, 3) - Transformation matrices
-    :return Bs: shape (2, n_traj, 3) - Origins of the frames / Translation vectors
+    :param data: (n_traj, n_length, 3) with time, x, y.
+    :return As: Transformation matrices (2, n_traj, 3, 3)
+    :return Bs: Origins of the frames / Translation vectors (2, n_traj, 3)
     """
     As = []
     Bs = []
-    for d in Data:
+    for d in data:
         a1 = (d[100] - d[0])[1:]
         A1 = getA(a1)
         b1 = d[0].copy()

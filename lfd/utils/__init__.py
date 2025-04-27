@@ -10,10 +10,9 @@ from .frames import Frame, GlobalFrame
 from .gp import FrameRelevanceGP, LocalPolicyGP
 from .lasa import (
     load_data,
-    load_data3,
+    load_data_with_phi,
     load_lasa,
     plot_curves,
-    plot_curves3,
     plot_trajectories,
 )
 from .utils import load_fdset, set_seed, transform_data
@@ -33,13 +32,12 @@ __all__ = [
     "FrameRelevanceGP",
     "GlobalFrame",
     "load_data",
-    "load_data3",
+    "load_data_with_phi",
     "load_fdset",
     "load_lasa",
     "LocalPolicyGP",
     "plot_alignments",
     "plot_curves",
-    "plot_curves3",
     "plot_keypoints",
     "plot_trajectories",
     "set_seed",
