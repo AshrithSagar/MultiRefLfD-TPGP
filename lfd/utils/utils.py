@@ -4,7 +4,7 @@ General utilities
 """
 
 import random
-from typing import List
+from typing import List, Optional
 
 import numpy as np
 import pyro
@@ -68,7 +68,9 @@ def get_frames(data):
     return As, Bs
 
 
-def transform_data(D0: NDArray, As: NDArray, Bs: NDArray) -> NDArray:
+def transform_data(
+    D0: NDArray, As: Optional[NDArray] = None, Bs: Optional[NDArray] = None
+) -> NDArray:
     """
     Transform data using transformation matrices and translation vectors.
 
@@ -78,6 +80,11 @@ def transform_data(D0: NDArray, As: NDArray, Bs: NDArray) -> NDArray:
     :return: Transformed demonstration set (n_frames+1, n_traj, n_length, n_dim)
     """
     X = [D0]
+    _As, _Bs = get_frames(D0)
+    if As is None:
+        As = _As
+    if Bs is None:
+        Bs = _Bs
     n_frames = As.shape[0]
 
     for m in range(n_frames):
@@ -92,8 +99,15 @@ def transform_data(D0: NDArray, As: NDArray, Bs: NDArray) -> NDArray:
 
 # Alternate
 @deprecated
-def transform_data_2(D0: NDArray, As: NDArray, Bs: NDArray) -> NDArray:
+def transform_data_2(
+    D0: NDArray, As: Optional[NDArray] = None, Bs: Optional[NDArray] = None
+) -> NDArray:
     X = [D0]
+    _As, _Bs = get_frames(D0)
+    if As is None:
+        As = _As
+    if Bs is None:
+        Bs = _Bs
     n_frames = As.shape[0]
     n_traj, n_length, n_dim = D0.shape
 

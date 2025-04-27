@@ -43,27 +43,26 @@ uv pip install -e .
 > [!WARNING]
 > WIP
 
-Directly run a script:
+Use the `lfd` module as a library.
+
+```python
+import lfd
+
+fdset = lfd.utils.load_fdset("s")
+
+P = lfd.alignment.computeP(fdset)
+D0_star = lfd.alignment.align_demonstrations(fdset, P)
+
+lfd.alignment.plot_keypoints(fdset, P)
+lfd.alignment.plot_alignments(fdset, D0_star, P)
+
+X = lfd.utils.transform_data(D0_star)
+```
+
+Run scripts directly using `uv run`.
 
 ```shell
 uv run lfd/run.py
-```
-
-Additionally, use the `lfd` module as a library.
-
-```python
-from lfd import *
-
-dset = load_dset("s")
-
-plot_index_points(dset, indices=[0, 1], only_between=True)
-plot_keypoints(dset, indices=[1])
-
-f1 = Frame(index=1, rotation=10, translation=(5, 5))
-dset_f1 = f1.transform(dset)
-plot_trajectories([dset[0], dset_f1[0]])
-
-al_dset = resample(dset, frames=[f1])
 ```
 
 ## References
