@@ -1647,6 +1647,7 @@ dependencies = [
     { name = "scipy" },
     { name = "shapely" },
     { name = "torch" },
+    { name = "tqdm" },
 ]
 
 [package.dev-dependencies]
@@ -1670,6 +1671,7 @@ requires-dist = [
     { name = "scipy", specifier = ">=1.13.1" },
     { name = "shapely", specifier = ">=2.0.7" },
     { name = "torch", specifier = ">=2.6.0" },
+    { name = "tqdm", specifier = ">=4.67.1" },
 ]
 
 [package.metadata.requires-dev]

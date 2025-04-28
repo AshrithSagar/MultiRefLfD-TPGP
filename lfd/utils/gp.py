@@ -3,210 +3,112 @@ lfd/utils/gp.py \n
 Gaussian processes utils
 """
 
-from typing import List, Tuple
+from typing import Tuple
 
 import gpytorch
 import torch
-import torch.nn as nn
+import tqdm
+from gpytorch.distributions import MultivariateNormal
+from gpytorch.kernels import MaternKernel, ScaleKernel
+from gpytorch.likelihoods import MultitaskGaussianLikelihood
+from gpytorch.means import ConstantMean
+from gpytorch.models import ApproximateGP
+from gpytorch.variational import (
+    CholeskyVariationalDistribution,
+    LMCVariationalStrategy,
+    VariationalStrategy,
+)
 from torch import Tensor
 
 
-class SingleOutputGPModel(gpytorch.models.ApproximateGP):
-    """Model for a single output dimension"""
-
-    def __init__(self, inducing_points: Tensor):
-        """
-        :param inducing_points: Inducing points for the GP model
-        """
-        variational_distribution = gpytorch.variational.CholeskyVariationalDistribution(
-            inducing_points.size(0)
+class MultitaskGPModel(ApproximateGP):
+    def __init__(
+        self,
+        num_latents: int,
+        num_tasks: int,
+        num_inducing: int = 16,
+        matern_nu: float = 2.5,
+    ):
+        inducing_points = torch.rand(num_latents, num_inducing, 1)
+        variational_distribution = CholeskyVariationalDistribution(
+            inducing_points.size(-2), batch_shape=torch.Size([num_latents])
         )
-        variational_strategy = gpytorch.variational.VariationalStrategy(
-            self,
-            inducing_points,
-            variational_distribution,
-            learn_inducing_locations=True,
+        variational_strategy = LMCVariationalStrategy(
+            VariationalStrategy(
+                self,
+                inducing_points,
+                variational_distribution,
+                learn_inducing_locations=True,
+            ),
+            num_tasks=num_tasks,
+            num_latents=num_latents,
+            latent_dim=-1,
         )
         super().__init__(variational_strategy)
 
-        self.mean_module = gpytorch.means.ConstantMean()
-        self.covar_module = gpytorch.kernels.ScaleKernel(
-            gpytorch.kernels.MaternKernel(nu=2.5)
+        self.mean_module = ConstantMean(batch_shape=torch.Size([num_latents]))
+        self.covar_module = ScaleKernel(
+            MaternKernel(nu=matern_nu, batch_shape=torch.Size([num_latents])),
+            batch_shape=torch.Size([num_latents]),
         )
 
-    def forward(self, x: Tensor):
-        """
-        Compute the forward pass of the GP model.
-
-        :param x: Input tensor of shape (batch_size, input_dim)
-        :return: MultivariateNormal distribution
-        """
+    def forward(self, x):
         mean_x = self.mean_module(x)
         covar_x = self.covar_module(x)
-        return gpytorch.distributions.MultivariateNormal(mean_x, covar_x)
+        return MultivariateNormal(mean_x, covar_x)
 
 
-class LocalPolicyGP(nn.Module):
-    """
-    Multi-output GP model for local policy learning.
-    Trains one GP per output dimension.
-    """
+class LocalPolicyGP:
+    """GP model for learning local policies"""
 
-    def __init__(self, input_dim: int, output_dim: int, num_inducing=128):
-        """
-        :param input_dim: Input dimension
-        :param output_dim: Output dimension
-        :param num_inducing: Number of inducing points for each GP
-        """
-        super().__init__()
-        self.models = nn.ModuleList(
-            [
-                SingleOutputGPModel(torch.randn(num_inducing, input_dim))
-                for _ in range(output_dim)
-            ]
-        )
-        self.likelihoods = nn.ModuleList(
-            [gpytorch.likelihoods.GaussianLikelihood() for _ in range(output_dim)]
-        )
+    def __init__(self, num_latents: int, num_tasks: int):
+        self.model = MultitaskGPModel(num_latents=num_latents, num_tasks=num_tasks)
+        self.likelihood = MultitaskGaussianLikelihood(num_tasks=num_tasks)
 
-    def train_model(
+    def train(
         self, train_x: Tensor, train_y: Tensor, num_epochs: int = 100, lr: float = 0.01
     ):
-        """
-        Train the model using the provided training data.
+        self.model.train()
+        self.likelihood.train()
 
-        :param train_x: Input tensor of shape (batch_size, input_dim)
-        :param train_y: Output tensor of shape (batch_size, output_dim)
-        :param num_epochs: Number of training epochs
-        :param lr: Learning rate for the optimizer
-        """
-        self.train()
-        mlls = [
-            gpytorch.mlls.VariationalELBO(likelihood, model, train_y.size(0))
-            for likelihood, model in zip(self.likelihoods, self.models)
-        ]
-        optimizer = torch.optim.Adam(self.parameters(), lr=lr)
+        optimizer = torch.optim.Adam(
+            [
+                {"params": self.model.parameters()},
+                {"params": self.likelihood.parameters()},
+            ],
+            lr=lr,
+        )
 
-        for epoch in range(num_epochs):
+        mll = gpytorch.mlls.VariationalELBO(
+            self.likelihood, self.model, num_data=train_y.size(0)
+        )
+
+        epochs_iter = tqdm.tqdm(range(num_epochs), desc="Epoch")
+        for i in epochs_iter:
+            # Within each iteration, we will go over each minibatch of data
             optimizer.zero_grad()
-            loss: Tensor = 0
-            for i in range(len(self.models)):
-                output = self.models[i](train_x)
-                loss += -mlls[i](output, train_y[:, i])
+            output = self.model(train_x)
+            loss: Tensor = -mll(output, train_y)
+            epochs_iter.set_postfix(loss=loss.item())
             loss.backward()
             optimizer.step()
 
     def predict(self, test_x: Tensor) -> Tuple[Tensor, Tensor]:
-        """
-        Predict mean and variance for each output dimension.
+        self.model.eval()
+        self.likelihood.eval()
 
-        :param test_x: Input tensor of shape (batch_size, input_dim)
-        :return mean: Mean tensor of shape (batch_size, output_dim)
-        :return var: Variance tensor of shape (batch_size, output_dim)
-        """
-        self.eval()
-        pred_means: List[Tensor] = []
-        pred_vars: List[Tensor] = []
         with torch.no_grad(), gpytorch.settings.fast_pred_var():
-            for model, likelihood in zip(self.models, self.likelihoods):
-                preds: gpytorch.likelihoods.Likelihood = likelihood(model(test_x))
-                pred_means.append(preds.mean.unsqueeze(1))
-                pred_vars.append(preds.variance.unsqueeze(1))
-        mean = torch.cat(pred_means, dim=1)
-        var = torch.cat(pred_vars, dim=1)
-        return mean, var
+            predictions = self.likelihood(self.model(test_x))
+            mean = predictions.mean
+            lower, upper = predictions.confidence_region()
 
-    def stabilized_predict(self, test_x, beta: float = 2.0) -> Tensor:
-        """
-        Predict with stabilization based on the gradient of the variance.
-
-        :param test_x: Input tensor of shape (batch_size, input_dim)
-        :param beta: Scaling factor for stabilization
-        :return: Stabilized mean prediction
-        """
-        mean, var = self.predict(test_x)
-        grad_var = torch.autograd.grad(
-            outputs=var.sum(),
-            inputs=test_x,
-            create_graph=True,
-            retain_graph=True,
-            only_inputs=True,
-        )[0]
-        direction = -grad_var / (grad_var.norm(dim=1, keepdim=True) + 1e-8)
-        stabilization = beta * var.sum(dim=1, keepdim=True) * direction
-        return mean + stabilization
+        return mean, lower, upper
 
 
-class FrameRelevanceGP(nn.Module):
+class FrameRelevanceGP:
     """
     Frame relevance model in multi-frame learning.
     Predicts relevance scores for each frame based on progress values.
     """
 
-    def __init__(self, n_frames: int, num_inducing: int = 32):
-        """
-        :param n_frames: Number of frames
-        :param num_inducing: Number of inducing points for each GP
-        """
-        super().__init__()
-        self.n_frames = n_frames
-        self.models = nn.ModuleList(
-            [SingleOutputGPModel(torch.randn(num_inducing, 1)) for _ in range(n_frames)]
-        )
-        self.likelihoods = nn.ModuleList(
-            [gpytorch.likelihoods.GaussianLikelihood() for _ in range(n_frames)]
-        )
-
-    def predict_alpha(self, phi):
-        """Predict raw relevance scores"""
-        self.eval()
-        alphas = []
-        with torch.no_grad(), gpytorch.settings.fast_pred_var():
-            for model, likelihood in zip(self.models, self.likelihoods):
-                preds: gpytorch.likelihoods.Likelihood = likelihood(model(phi))
-                alphas.append(preds.mean.squeeze(-1))  # Each alpha is (batch_size,)
-        alphas = torch.stack(alphas, dim=1)  # Shape: (batch_size, n_frames)
-        # Softmax normalization so they sum to 1 across frames
-        return torch.softmax(alphas, dim=1)
-
-    def train_self_supervised(
-        self,
-        local_policies: List[LocalPolicyGP],
-        As: Tensor,
-        X_val: Tensor,
-        Y_val: Tensor,
-        num_epochs: int = 100,
-        lr: float = 0.01,
-    ):
-        """
-        Self-supervised training
-
-        :param local_policies: List of trained LocalPolicyGP, one per frame
-        :param As: (n_frames, rotation) matrices per frame
-        :param X_val: Validation demonstration states in global frame (n_frames, n_length, n_dim)
-        :param Y_val: Validation demonstration labels in global frame (n_frames, n_length, output_dim)
-        """
-        self.train()
-        optimizer = torch.optim.Adam(self.parameters(), lr=lr)
-        n_frames, n_length, n_dim = X_val.shape
-
-        for epoch in range(num_epochs):
-            optimizer.zero_grad()
-
-            mean_preds = torch.zeros(n_frames - 1, n_length, n_dim)
-            var_preds = torch.zeros(n_frames - 1, n_length, n_dim, n_dim)
-            for t in range(n_length):
-                for m, local_policy in enumerate(local_policies, start=1):
-                    phi_local = X_val[m, t, 0]
-                    alpha_weights = self.predict_alpha(phi_local)  # (n_frames,)
-                    for i in range(n_dim):
-                        _m_mu_i, _m_var_i = local_policy.predict(X_val[m, t, i])
-                        mean_preds[m, t] = As[m].T @ _m_mu_i
-                        var_preds[m, t] = As[m].T @ _m_var_i @ As[m]
-                weighted_mean = (mean_preds * alpha_weights.unsqueeze(1)).sum(dim=0)
-                weighted_var = (var_preds * alpha_weights.unsqueeze(1)).sum(dim=0)
-
-            # Negative log likelihood
-            loss: Tensor = 0
-            loss.backward()
-            optimizer.step()
+    pass
