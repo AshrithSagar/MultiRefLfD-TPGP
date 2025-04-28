@@ -11,6 +11,7 @@ import pyro
 import torch
 from deprecated import deprecated
 from numpy.typing import NDArray
+from torch import Tensor
 
 from .lasa import getA, load_data_with_phi
 
@@ -124,3 +125,19 @@ def transform_data_2(
 
     X = np.array(X)  # (n_frames+1, n_traj, n_length, n_dim)
     return X
+
+
+def vectorized_derivative(x: NDArray):
+    dt = 1 / (x.shape[1] - 1)
+    xd_diff = np.diff(x, axis=1) / dt
+    padding = np.zeros((x.shape[0], 1, x.shape[2] if x.ndim > 2 else 1))
+    xd = np.concatenate((xd_diff, padding), axis=1)
+    v_factor = np.cos(np.linspace(0, np.pi / 2, x.shape[1])) ** 2
+    xd = xd * (v_factor[None, ..., None])
+    return xd
+
+
+def toTensor(x, dtype=torch.float32, device: torch.device = "cpu") -> Tensor:
+    if isinstance(x, np.ndarray):
+        x = torch.tensor(x, dtype=dtype)
+    return x.to(device)
