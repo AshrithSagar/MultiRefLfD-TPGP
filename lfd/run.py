@@ -41,42 +41,10 @@ def main():
 
     X_train, X_val = X[1:], X[0]
     Y_train, Y_val = Y[1:], Y[0]
-    X_train.shape, X_val.shape
 
-    local_policies = []
-    likelihoods = []
-
-    for m in range(X_train.shape[0]):
-        print(f"Training local GP for frame {m + 1}...")
-        gp_m, lik_m = lfd.gp.train_local_gp(X_train[m], Y_train[m])
-        local_policies.append(gp_m)
-        likelihoods.append(lik_m)
-
-    mean_preds = torch.empty_like(X_train)
-    var_preds = torch.empty_like(X_train)
-    covar_preds = torch.empty(
-        X_train.shape[0],
-        X_train.shape[1],
-        X_train.shape[2],
-        X_train.shape[3],
-        X_train.shape[3],
-    )
-
-    for m in range(X_train.shape[0]):
-        model: lfd.gp.MultitaskGPModel = local_policies[m]
-        likelihood: gpytorch.likelihoods.MultitaskGaussianLikelihood = likelihoods[m]
-
-        model.eval()
-        likelihood.eval()
-
-        with torch.no_grad():
-            for i, traj in enumerate(X_train[m]):
-                for j, point in enumerate(traj):
-                    points = traj[j : j + 1]
-                    preds_traj = likelihood(model(points))
-                    mean_preds[m, i, j] = preds_traj.mean
-                    var_preds[m, i, j] = preds_traj.variance
-                    covar_preds[m, i, j] = preds_traj.covariance_matrix
+    lgp = lfd.gp.LocalPolicyGP(X_train, Y_train, num_inducing=500)
+    lgp.train(num_epochs=100, lr=0.01)
+    lgp.predict()
 
 
 if __name__ == "__main__":
