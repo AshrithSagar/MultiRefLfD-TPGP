@@ -3,56 +3,52 @@ lfd/utils/gp.py \n
 Gaussian processes utils
 """
 
+import gpytorch
 import torch
 import tqdm
-from gpytorch.distributions import MultivariateNormal
-from gpytorch.kernels import MaternKernel, ScaleKernel
-from gpytorch.likelihoods import MultitaskGaussianLikelihood
-from gpytorch.means import ConstantMean
-from gpytorch.mlls import VariationalELBO
-from gpytorch.models import ApproximateGP
-from gpytorch.variational import (
-    CholeskyVariationalDistribution,
-    IndependentMultitaskVariationalStrategy,
-    VariationalStrategy,
-)
 from torch import Tensor
 
 
-class MultitaskGPModel(ApproximateGP):
+class MultitaskGPModel(gpytorch.models.ApproximateGP):
     def __init__(
         self,
         train_x: Tensor,  # (n_data, n_dim)
-        num_tasks: int = 3,
+        num_tasks: int,
         num_inducing: int = 500,
         matern_nu: float = 2.5,
     ):
         inducing_points = train_x[torch.randperm(train_x.size(0))[:num_inducing]]
-        variational_distribution = CholeskyVariationalDistribution(
+        variational_distribution = gpytorch.variational.CholeskyVariationalDistribution(
             num_inducing_points=num_inducing, batch_shape=torch.Size([num_tasks])
         )
-        base_variational_strategy = VariationalStrategy(
+        base_variational_strategy = gpytorch.variational.VariationalStrategy(
             self,
             inducing_points,
             variational_distribution,
             learn_inducing_locations=True,
         )
-        variational_strategy = IndependentMultitaskVariationalStrategy(
-            base_variational_strategy, num_tasks=num_tasks
+        variational_strategy = (
+            gpytorch.variational.IndependentMultitaskVariationalStrategy(
+                base_variational_strategy, num_tasks=num_tasks
+            )
         )
 
         super().__init__(variational_strategy)
 
-        self.mean_module = ConstantMean(batch_shape=torch.Size([num_tasks]))
-        self.covar_module = ScaleKernel(
-            MaternKernel(nu=matern_nu, batch_shape=torch.Size([num_tasks])),
+        self.mean_module = gpytorch.means.ConstantMean(
+            batch_shape=torch.Size([num_tasks])
+        )
+        self.covar_module = gpytorch.kernels.ScaleKernel(
+            gpytorch.kernels.MaternKernel(
+                nu=matern_nu, batch_shape=torch.Size([num_tasks])
+            ),
             batch_shape=torch.Size([num_tasks]),
         )
 
     def forward(self, x):
         mean_x = self.mean_module(x)
         covar_x = self.covar_module(x)
-        return MultivariateNormal(mean_x, covar_x)
+        return gpytorch.distributions.MultivariateNormal(mean_x, covar_x)
 
 
 class LocalPolicyGP:
@@ -64,7 +60,7 @@ def train_local_gp(X_frame: Tensor, Y_frame: Tensor, num_epochs=100):
     train_y = Y_frame.reshape(-1, 3)
 
     model = MultitaskGPModel(train_x, num_tasks=3)
-    likelihood = MultitaskGaussianLikelihood(num_tasks=3)
+    likelihood = gpytorch.likelihoods.MultitaskGaussianLikelihood(num_tasks=3)
 
     model.train()
     likelihood.train()
@@ -77,7 +73,7 @@ def train_local_gp(X_frame: Tensor, Y_frame: Tensor, num_epochs=100):
         lr=0.1,
     )
 
-    mll = VariationalELBO(likelihood, model, num_data=train_y.size(0))
+    mll = gpytorch.mlls.VariationalELBO(likelihood, model, num_data=train_y.size(0))
 
     epochs_iter = tqdm.tqdm(range(num_epochs), desc="Epoch")
     for i in epochs_iter:
