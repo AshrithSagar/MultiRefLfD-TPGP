@@ -74,14 +74,31 @@ class LocalPolicyGP:
         train_x = X_frame.reshape(-1, 3)  # (n_traj * n_length, 3)
         train_y = Y_frame.reshape(-1, 3)
 
-        model = MultitaskGPModel(train_x, num_tasks=3, num_inducing=self.num_inducing)
+        X_mean = train_x.mean(dim=0)
+        X_std = train_x.std(dim=0) + 1e-6
+        Y_mean = train_y.mean(dim=0)
+        Y_std = train_y.std(dim=0) + 1e-6
+        train_x_norm = (train_x - X_mean) / X_std
+        train_y_norm = (train_y - Y_mean) / Y_std
+
+        model = MultitaskGPModel(
+            train_x_norm, num_tasks=3, num_inducing=self.num_inducing
+        )
         likelihood = gpytorch.likelihoods.MultitaskGaussianLikelihood(num_tasks=3)
+
+        model.covar_module.base_kernel.lengthscale = torch.tensor(1.0)
+        model.covar_module.outputscale = torch.tensor(1.0)
+
+        model.X_mean = X_mean
+        model.X_std = X_std
+        model.Y_mean = Y_mean
+        model.Y_std = Y_std
 
         model.train()
         likelihood.train()
 
         variational_ngd_optimizer = gpytorch.optim.NGD(
-            model.variational_parameters(), num_data=train_y.size(0), lr=0.1
+            model.variational_parameters(), num_data=train_y_norm.size(0), lr=0.1
         )
         hyperparameter_optimizer = torch.optim.Adam(
             [
@@ -91,15 +108,17 @@ class LocalPolicyGP:
             lr=lr,
         )
 
-        mll = gpytorch.mlls.VariationalELBO(likelihood, model, num_data=train_y.size(0))
+        mll = gpytorch.mlls.VariationalELBO(
+            likelihood, model, num_data=train_y_norm.size(0)
+        )
 
         _tqdm = tqdm.notebook.tqdm if notebook else tqdm.tqdm
         epochs_iter = _tqdm(range(num_epochs), desc="Epoch")
         for i in epochs_iter:
             variational_ngd_optimizer.zero_grad()
             hyperparameter_optimizer.zero_grad()
-            output = model(train_x)
-            loss: Tensor = -mll(output, train_y)
+            output = model(train_x_norm)
+            loss: Tensor = -mll(output, train_y_norm)
             epochs_iter.set_postfix(loss=loss.item())
             loss.backward()
             variational_ngd_optimizer.step()
@@ -141,16 +160,19 @@ class LocalPolicyGP:
             model.eval()
             likelihood.eval()
 
-            with torch.no_grad():
+            D = torch.diag(model.Y_std)
+            with torch.no_grad(), gpytorch.settings.fast_pred_var():
                 for i in range(n_traj):
                     traj = self.X_train[m, i]
-                    preds_traj = likelihood(model(traj))
-                    mean_preds[m, i] = preds_traj.mean
+                    traj_norm = (traj - model.X_mean) / model.X_std
+                    preds_traj = likelihood(model(traj_norm))
+                    mean_preds[m, i] = preds_traj.mean * model.Y_std + model.Y_mean
                     covar = preds_traj.covariance_matrix.view(
                         n_length, n_dim, n_length, n_dim
                     )
                     covar_per_point = covar.diagonal(dim1=0, dim2=2).permute(2, 0, 1)
-                    covar_preds[m, i] = covar_per_point
+                    covar_rescaled = D @ covar_per_point @ D
+                    covar_preds[m, i] = covar_rescaled
 
         self.mean_preds = mean_preds
         self.covar_preds = covar_preds

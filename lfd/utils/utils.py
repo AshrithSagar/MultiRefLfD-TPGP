@@ -24,6 +24,7 @@ def set_seed(seed: int = 42):
     pyro.set_rng_seed(seed)
     if torch.cuda.is_available():
         torch.cuda.manual_seed_all(seed)
+    torch.use_deterministic_algorithms(True)
 
 
 def load_fdset(key: str) -> NDArray:
