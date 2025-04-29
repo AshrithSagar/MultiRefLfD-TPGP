@@ -86,7 +86,7 @@ Don't use dynamic time warping (DTW).
 
 \( P_{im} \to \) Keypoint progress values for demonstration \( i \) in frame \( m \).
 \begin{equation}
-    P_{im} = \operatorname{median}({}^{m}\boldsymbol{B}_{i\cdot}), \quad \forall i \in \{ 0, \ldots, N \}, \forall m \in \{ 1, \ldots, M \}
+    \boldsymbol{P}_{im} = \operatorname{median}({}^{m}\boldsymbol{B}_{i\cdot}), \quad \forall i \in \{ 0, \ldots, N \}, \forall m \in \{ 1, \ldots, M \}
 \end{equation}
 
 \( \mathcal{D}^{(0*)}, \mathcal{D}^{(1*)}, \ldots, \mathcal{D}^{(M*)} \to \) Aligned (and transformed) demonstration sets.
@@ -100,7 +100,7 @@ Local policies are encoded as a dynamical system, which are learnt using Gaussia
     f(\boldsymbol{x}) \sim \mathcal{GP}(0, k(\boldsymbol{x}, \boldsymbol{x}'))
 \end{equation}
 
-A variational approximation of the posterior distribution is used,
+A variational approximation of the posterior distribution is used~\cite{pmlr-v38-hensman15},
 \begin{equation}
     q(\boldsymbol{u}) = \mathcal{N}(\boldsymbol{u} \mid \boldsymbol{m}, \boldsymbol{S}), \quad \text{where } \boldsymbol{u} \to \text{A set of inducing variables in } \boldsymbol{Z}
 \end{equation}
@@ -122,7 +122,7 @@ and the predictive distribution on a test point \( \boldsymbol{X}_* \) is
 \end{align}
 
 Every prediction returns the mean and variance of the desired transition \( p(\Delta \boldsymbol{x}_i) = \mathcal{N}(\mu_i, \sigma_i^2) \) from which the total variance can be found by \( \sigma^2(\boldsymbol{x}) = \sum_{i} \sigma_i^2(\boldsymbol{x}) \).
-An additional term is added to each of the Cartesian transitions to attract the autonomous system into regions of minimum risk/uncertainty by considering the total uncertainty \( \sigma^2(\boldsymbol{x}) \) as a quantification fo the potential risk, as
+An additional term is added to each of the Cartesian transitions to attract the autonomous system into regions of minimum risk/uncertainty by considering the total uncertainty \( \sigma^2(\boldsymbol{x}) \) as a quantification for the potential risk, as
 \begin{equation}
     \Delta \boldsymbol{\xi}_i^{\text{risk}} = - \beta \sigma_i(\boldsymbol{x}) \frac{\nabla_i \sigma^2(\boldsymbol{x})}{\Vert \nabla \sigma^2(\boldsymbol{x}) \Vert}
 \end{equation}
