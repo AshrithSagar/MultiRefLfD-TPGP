@@ -18,11 +18,11 @@ class MultitaskGPModel(gpytorch.models.ApproximateGP):
         self,
         train_x: Tensor,  # (n_data, n_dim)
         num_tasks: int,
-        num_inducing: int = 500,
+        num_inducing: int = 64,
         matern_nu: float = 2.5,
     ):
         inducing_points = train_x[torch.randperm(train_x.size(0))[:num_inducing]]
-        variational_distribution = gpytorch.variational.CholeskyVariationalDistribution(
+        variational_distribution = gpytorch.variational.NaturalVariationalDistribution(
             num_inducing_points=num_inducing, batch_shape=torch.Size([num_tasks])
         )
         base_variational_strategy = gpytorch.variational.VariationalStrategy(
@@ -58,7 +58,7 @@ class MultitaskGPModel(gpytorch.models.ApproximateGP):
 class LocalPolicyGP:
     """GP model for learning local policies"""
 
-    def __init__(self, X_train: Tensor, Y_train: Tensor, num_inducing=500):
+    def __init__(self, X_train: Tensor, Y_train: Tensor, num_inducing=64):
         self.X_train = X_train
         self.Y_train = Y_train
         self.num_inducing = num_inducing
@@ -68,7 +68,7 @@ class LocalPolicyGP:
         X_frame: Tensor,
         Y_frame: Tensor,
         num_epochs: int = 100,
-        lr: float = 0.1,
+        lr: float = 0.01,
         notebook=False,
     ):
         train_x = X_frame.reshape(-1, 3)  # (n_traj * n_length, 3)
@@ -80,9 +80,12 @@ class LocalPolicyGP:
         model.train()
         likelihood.train()
 
-        optimizer = torch.optim.Adam(
+        variational_ngd_optimizer = gpytorch.optim.NGD(
+            model.variational_parameters(), num_data=train_y.size(0), lr=0.1
+        )
+        hyperparameter_optimizer = torch.optim.Adam(
             [
-                {"params": model.parameters()},
+                {"params": model.hyperparameters()},
                 {"params": likelihood.parameters()},
             ],
             lr=lr,
@@ -93,12 +96,14 @@ class LocalPolicyGP:
         _tqdm = tqdm.notebook.tqdm if notebook else tqdm.tqdm
         epochs_iter = _tqdm(range(num_epochs), desc="Epoch")
         for i in epochs_iter:
-            optimizer.zero_grad()
+            variational_ngd_optimizer.zero_grad()
+            hyperparameter_optimizer.zero_grad()
             output = model(train_x)
             loss: Tensor = -mll(output, train_y)
             epochs_iter.set_postfix(loss=loss.item())
             loss.backward()
-            optimizer.step()
+            variational_ngd_optimizer.step()
+            hyperparameter_optimizer.step()
 
         return model, likelihood
 
@@ -178,7 +183,7 @@ class GPModel(gpytorch.models.ApproximateGP):
     def __init__(
         self,
         train_x: Tensor,  # (n_data, n_dim)
-        num_inducing: int = 500,
+        num_inducing: int = 64,
     ):
         inducing_points = train_x[:num_inducing]
         variational_distribution = gpytorch.variational.CholeskyVariationalDistribution(

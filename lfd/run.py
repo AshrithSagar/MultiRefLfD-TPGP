@@ -42,8 +42,8 @@ def main():
     X_train, X_val = X[1:], X[0]
     Y_train, Y_val = Y[1:], Y[0]
 
-    lgp = lfd.gp.LocalPolicyGP(X_train, Y_train, num_inducing=500)
-    lgp.train(num_epochs=100, lr=0.01)
+    lgp = lfd.gp.LocalPolicyGP(X_train, Y_train, num_inducing=256)
+    lgp.train(num_epochs=300, lr=0.01)
     lgp.predict()
 
 
