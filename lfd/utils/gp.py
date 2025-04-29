@@ -64,7 +64,12 @@ class LocalPolicyGP:
         self.num_inducing = num_inducing
 
     def _train_frame(
-        self, X_frame: Tensor, Y_frame: Tensor, num_epochs: int = 100, lr: float = 0.1
+        self,
+        X_frame: Tensor,
+        Y_frame: Tensor,
+        num_epochs: int = 100,
+        lr: float = 0.1,
+        notebook=False,
     ):
         train_x = X_frame.reshape(-1, 3)  # (n_traj * n_length, 3)
         train_y = Y_frame.reshape(-1, 3)
@@ -85,7 +90,8 @@ class LocalPolicyGP:
 
         mll = gpytorch.mlls.VariationalELBO(likelihood, model, num_data=train_y.size(0))
 
-        epochs_iter = tqdm.tqdm(range(num_epochs), desc="Epoch")
+        _tqdm = tqdm.notebook.tqdm if notebook else tqdm.tqdm
+        epochs_iter = _tqdm(range(num_epochs), desc="Epoch")
         for i in epochs_iter:
             optimizer.zero_grad()
             output = model(train_x)
@@ -96,7 +102,7 @@ class LocalPolicyGP:
 
         return model, likelihood
 
-    def train(self, num_epochs=100, lr=0.1):
+    def train(self, num_epochs=100, lr=0.1, notebook=False):
         @dataclass
         class LocalGP:
             model: MultitaskGPModel
@@ -106,12 +112,15 @@ class LocalPolicyGP:
         for m in range(self.X_train.shape[0]):
             print(f"Training GP for frame {m + 1}...")
             model, likelihood = self._train_frame(
-                self.X_train[m], self.Y_train[m], num_epochs=num_epochs, lr=lr
+                self.X_train[m],
+                self.Y_train[m],
+                num_epochs=num_epochs,
+                lr=lr,
+                notebook=notebook,
             )
             local_gps[m] = LocalGP(model, likelihood)
 
         self.local_gps = local_gps
-        return local_gps
 
     def predict(self):
         n_frames, n_traj, n_length, n_dim = self.X_train.shape
