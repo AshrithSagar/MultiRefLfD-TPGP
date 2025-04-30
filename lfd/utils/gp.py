@@ -4,7 +4,7 @@ Gaussian processes utils
 """
 
 from dataclasses import dataclass
-from typing import Dict
+from typing import Dict, Optional
 
 import gpytorch
 import torch
@@ -13,17 +13,41 @@ from deprecated import deprecated
 from torch import Tensor
 
 
+class DataNormalizer:
+    """Normalization utilities"""
+
+    def __init__(self, X: Tensor, Y: Tensor):
+        self.X_mean = X.mean(dim=0)
+        self.X_std = X.std(dim=0) + 1e-6
+        self.Y_mean = Y.mean(dim=0)
+        self.Y_std = Y.std(dim=0) + 1e-6
+
+    def normalize_inputs(self, X: Tensor) -> Tensor:
+        return (X - self.X_mean) / self.X_std
+
+    def normalize_outputs(self, Y: Tensor) -> Tensor:
+        return (Y - self.Y_mean) / self.Y_std
+
+    def denormalize_outputs(self, Y_norm: Tensor) -> Tensor:
+        return Y_norm * self.Y_std + self.Y_mean
+
+    def rescale_covariance(self, covar: Tensor) -> Tensor:
+        D = torch.diag(self.Y_std)
+        return torch.einsum("ij,njk,kl->nil", D, covar, D)
+
+
 class MultitaskGPModel(gpytorch.models.ApproximateGP):
     def __init__(
         self,
         train_x: Tensor,  # (n_data, n_dim)
         num_tasks: int,
-        num_inducing: int = 64,
+        num_inducing: Optional[int] = 64,
         matern_nu: float = 2.5,
     ):
         inducing_points = train_x[torch.randperm(train_x.size(0))[:num_inducing]]
         variational_distribution = gpytorch.variational.NaturalVariationalDistribution(
-            num_inducing_points=num_inducing, batch_shape=torch.Size([num_tasks])
+            num_inducing_points=inducing_points.size(0),
+            batch_shape=torch.Size([num_tasks]),
         )
         base_variational_strategy = gpytorch.variational.VariationalStrategy(
             self,
@@ -58,7 +82,9 @@ class MultitaskGPModel(gpytorch.models.ApproximateGP):
 class LocalPolicyGP:
     """GP model for learning local policies"""
 
-    def __init__(self, X_train: Tensor, Y_train: Tensor, num_inducing=64):
+    def __init__(
+        self, X_train: Tensor, Y_train: Tensor, num_inducing: Optional[int] = 64
+    ):
         self.X_train = X_train
         self.Y_train = Y_train
         self.num_inducing = num_inducing
@@ -74,12 +100,9 @@ class LocalPolicyGP:
         train_x = X_frame.reshape(-1, 3)  # (n_traj * n_length, 3)
         train_y = Y_frame.reshape(-1, 3)
 
-        X_mean = train_x.mean(dim=0)
-        X_std = train_x.std(dim=0) + 1e-6
-        Y_mean = train_y.mean(dim=0)
-        Y_std = train_y.std(dim=0) + 1e-6
-        train_x_norm = (train_x - X_mean) / X_std
-        train_y_norm = (train_y - Y_mean) / Y_std
+        normalizer = DataNormalizer(train_x, train_y)
+        train_x_norm = normalizer.normalize_inputs(train_x)
+        train_y_norm = normalizer.normalize_outputs(train_y)
 
         model = MultitaskGPModel(
             train_x_norm, num_tasks=3, num_inducing=self.num_inducing
@@ -88,11 +111,7 @@ class LocalPolicyGP:
 
         model.covar_module.base_kernel.lengthscale = torch.tensor(1.0)
         model.covar_module.outputscale = torch.tensor(1.0)
-
-        model.X_mean = X_mean
-        model.X_std = X_std
-        model.Y_mean = Y_mean
-        model.Y_std = Y_std
+        model.normalizer = normalizer
 
         model.train()
         likelihood.train()
@@ -160,18 +179,20 @@ class LocalPolicyGP:
             model.eval()
             likelihood.eval()
 
-            D = torch.diag(model.Y_std)
+            normalizer = model.normalizer
             with torch.no_grad(), gpytorch.settings.fast_pred_var():
                 for i in range(n_traj):
                     traj = self.X_train[m, i]
-                    traj_norm = (traj - model.X_mean) / model.X_std
+                    traj_norm = normalizer.normalize_inputs(traj)
                     preds_traj = likelihood(model(traj_norm))
-                    mean_preds[m, i] = preds_traj.mean * model.Y_std + model.Y_mean
+
+                    mean_preds[m, i] = normalizer.denormalize_outputs(preds_traj.mean)
+
                     covar = preds_traj.covariance_matrix.view(
                         n_length, n_dim, n_length, n_dim
                     )
                     covar_per_point = covar.diagonal(dim1=0, dim2=2).permute(2, 0, 1)
-                    covar_rescaled = D @ covar_per_point @ D
+                    covar_rescaled = normalizer.rescale_covariance(covar_per_point)
                     covar_preds[m, i] = covar_rescaled
 
         self.mean_preds = mean_preds
