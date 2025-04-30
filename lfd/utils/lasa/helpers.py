@@ -133,11 +133,9 @@ def load_data_with_phi(letter: str):
     Load demonstrations with added progress values (phi) in dimension 0.
     """
     letter2id = dict(c=2, j=6, s=24)
-    _, x, _, _, _, _ = load_lasa(letter2id[letter.lower()])
-    time = np.linspace(0, 1, x.shape[1])
-    time = np.tile(time[None, ..., None], (x.shape[0], 1, 1))
-    data = np.concatenate([time, x], axis=-1)
-    return data, time
+    T, X, _, _, _, _ = load_lasa(letter2id[letter.lower()])
+    D0 = np.concatenate([T[..., None] / T.shape[-1], X], axis=-1)
+    return D0
 
 
 # plotting trajectories

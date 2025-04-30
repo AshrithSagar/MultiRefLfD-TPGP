@@ -39,12 +39,11 @@ class DataNormalizer:
 class MultitaskGPModel(gpytorch.models.ApproximateGP):
     def __init__(
         self,
-        train_x: Tensor,  # (n_data, n_dim)
         num_tasks: int,
-        num_inducing: Optional[int] = 64,
+        num_inducing: int = 1000,
         matern_nu: float = 2.5,
     ):
-        inducing_points = train_x[torch.randperm(train_x.size(0))[:num_inducing]]
+        inducing_points = torch.rand(num_inducing, num_tasks)
         variational_distribution = gpytorch.variational.NaturalVariationalDistribution(
             num_inducing_points=inducing_points.size(0),
             batch_shape=torch.Size([num_tasks]),
@@ -82,9 +81,7 @@ class MultitaskGPModel(gpytorch.models.ApproximateGP):
 class LocalPolicyGP:
     """GP model for learning local policies"""
 
-    def __init__(
-        self, X_train: Tensor, Y_train: Tensor, num_inducing: Optional[int] = 64
-    ):
+    def __init__(self, X_train: Tensor, Y_train: Tensor, num_inducing: int = 1000):
         self.X_train = X_train
         self.Y_train = Y_train
         self.num_inducing = num_inducing
@@ -104,9 +101,7 @@ class LocalPolicyGP:
         train_x_norm = normalizer.normalize_inputs(train_x)
         train_y_norm = normalizer.normalize_outputs(train_y)
 
-        model = MultitaskGPModel(
-            train_x_norm, num_tasks=3, num_inducing=self.num_inducing
-        )
+        model = MultitaskGPModel(num_tasks=3, num_inducing=self.num_inducing)
         likelihood = gpytorch.likelihoods.MultitaskGaussianLikelihood(num_tasks=3)
 
         model.covar_module.base_kernel.lengthscale = torch.tensor(1.0)
@@ -226,7 +221,7 @@ class GPModel(gpytorch.models.ApproximateGP):
     def __init__(
         self,
         train_x: Tensor,  # (n_data, n_dim)
-        num_inducing: int = 64,
+        num_inducing: int = 1000,
     ):
         inducing_points = train_x[:num_inducing]
         variational_distribution = gpytorch.variational.CholeskyVariationalDistribution(
