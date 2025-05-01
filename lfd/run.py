@@ -15,7 +15,7 @@ def main():
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    D0, _ = lfd.utils.load_data_with_phi("s")
+    D0 = lfd.utils.load_data_with_phi("s")
 
     fdset = lfd.utils.transform_data(D0)
     P = lfd.alignment.computeP(fdset)

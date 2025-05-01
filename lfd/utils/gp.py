@@ -174,7 +174,7 @@ class LocalPolicyGP:
             model.eval()
             likelihood.eval()
 
-            normalizer = model.normalizer
+            normalizer: DataNormalizer = model.normalizer
             with torch.no_grad(), gpytorch.settings.fast_pred_var():
                 for i in range(n_traj):
                     traj = self.X_train[m, i]
