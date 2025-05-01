@@ -81,10 +81,17 @@ class MultitaskGPModel(gpytorch.models.ApproximateGP):
 class LocalPolicyGP:
     """GP model for learning local policies"""
 
-    def __init__(self, X_train: Tensor, Y_train: Tensor, num_inducing: int = 1000):
+    def __init__(
+        self,
+        X_train: Tensor,
+        Y_train: Tensor,
+        num_inducing: int = 1000,
+        matern_nu: float = 2.5,
+    ):
         self.X_train = X_train
         self.Y_train = Y_train
         self.num_inducing = num_inducing
+        self.matern_nu = matern_nu
 
     def _train_frame(
         self,
@@ -101,7 +108,9 @@ class LocalPolicyGP:
         train_x_norm = normalizer.normalize_inputs(train_x)
         train_y_norm = normalizer.normalize_outputs(train_y)
 
-        model = MultitaskGPModel(num_tasks=3, num_inducing=self.num_inducing)
+        model = MultitaskGPModel(
+            num_tasks=3, num_inducing=self.num_inducing, matern_nu=self.matern_nu
+        )
         likelihood = gpytorch.likelihoods.MultitaskGaussianLikelihood(num_tasks=3)
 
         model.covar_module.base_kernel.lengthscale = torch.tensor(1.0)
@@ -160,7 +169,7 @@ class LocalPolicyGP:
 
         self.local_gps = local_gps
 
-    def predict(self):
+    def predict_train(self):
         n_frames, n_traj, n_length, n_dim = self.X_train.shape
 
         mean_preds = torch.empty_like(self.X_train).clone()
@@ -194,7 +203,7 @@ class LocalPolicyGP:
         self.covar_preds = covar_preds
 
     @deprecated
-    def predict_2(self):
+    def predict_train_2(self):
         n_frames, n_traj, n_length, n_dim = self.X_train.shape
 
         mean_preds = torch.empty_like(self.X_train).clone()
@@ -215,6 +224,25 @@ class LocalPolicyGP:
                         preds_point = likelihood(model(point))
                         mean_preds[m, i, j] = preds_point.mean
                         covar_preds[m, i, j] = preds_point.covariance_matrix
+
+    def predict(self, x_test: Tensor, H: Tensor):
+        n_frames, n_dim, _ = H.shape
+        mean_preds = torch.empty(n_frames, n_dim).clone()
+        for m in range(n_frames):
+            model = self.local_gps[m].model
+            likelihood = self.local_gps[m].likelihood
+
+            model.eval()
+            likelihood.eval()
+
+            normalizer: DataNormalizer = model.normalizer
+            with torch.no_grad(), gpytorch.settings.fast_pred_var():
+                x: Tensor = H[m] @ x_test
+                x_norm = normalizer.normalize_inputs(x.unsqueeze(0))
+                local_preds = likelihood(model(x_norm))
+                global_preds = normalizer.denormalize_outputs(local_preds.mean)
+                mean_preds[m] = H[m].T @ global_preds.squeeze(0)
+        return mean_preds
 
 
 class GPModel(gpytorch.models.ApproximateGP):

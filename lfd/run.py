@@ -44,7 +44,7 @@ def main():
 
     lgp = lfd.gp.LocalPolicyGP(X_train, Y_train, num_inducing=256)
     lgp.train(num_epochs=300, lr=0.01)
-    lgp.predict()
+    lgp.predict_train()
 
 
 if __name__ == "__main__":
