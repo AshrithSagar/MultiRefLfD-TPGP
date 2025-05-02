@@ -4,7 +4,7 @@ Gaussian processes utils
 """
 
 from dataclasses import dataclass
-from typing import Dict, Optional
+from typing import Dict
 
 import gpytorch
 import torch
@@ -101,12 +101,15 @@ class LocalPolicyGP:
         lr: float = 0.01,
         notebook=False,
     ):
-        train_x = X_frame.reshape(-1, 3)  # (n_traj * n_length, 3)
-        train_y = Y_frame.reshape(-1, 3)
-
-        normalizer = DataNormalizer(train_x, train_y)
-        train_x_norm = normalizer.normalize_inputs(train_x)
-        train_y_norm = normalizer.normalize_outputs(train_y)
+        normalizers: Dict[int, DataNormalizer] = {}
+        train_x_norm = torch.empty_like(X_frame).clone()
+        train_y_norm = torch.empty_like(Y_frame).clone()
+        for i in range(X_frame.shape[0]):
+            normalizers[i] = DataNormalizer(X_frame[i], Y_frame[i])
+            train_x_norm[i] = normalizers[i].normalize_inputs(X_frame[i])
+            train_y_norm[i] = normalizers[i].normalize_outputs(Y_frame[i])
+        train_x_norm = train_x_norm.reshape(-1, 3)  # (n_traj * n_length, 3)
+        train_y_norm = train_y_norm.reshape(-1, 3)
 
         model = MultitaskGPModel(
             num_tasks=3, num_inducing=self.num_inducing, matern_nu=self.matern_nu
@@ -115,7 +118,7 @@ class LocalPolicyGP:
 
         model.covar_module.base_kernel.lengthscale = torch.tensor(1.0)
         model.covar_module.outputscale = torch.tensor(1.0)
-        model.normalizer = normalizer
+        model.normalizers = normalizers
 
         model.train()
         likelihood.train()
@@ -183,20 +186,22 @@ class LocalPolicyGP:
             model.eval()
             likelihood.eval()
 
-            normalizer: DataNormalizer = model.normalizer
+            normalizers: Dict[int, DataNormalizer] = model.normalizers
             with torch.no_grad(), gpytorch.settings.fast_pred_var():
                 for i in range(n_traj):
                     traj = self.X_train[m, i]
-                    traj_norm = normalizer.normalize_inputs(traj)
+                    traj_norm = normalizers[i].normalize_inputs(traj)
                     preds_traj = likelihood(model(traj_norm))
 
-                    mean_preds[m, i] = normalizer.denormalize_outputs(preds_traj.mean)
+                    mean_preds[m, i] = normalizers[i].denormalize_outputs(
+                        preds_traj.mean
+                    )
 
                     covar = preds_traj.covariance_matrix.view(
                         n_length, n_dim, n_length, n_dim
                     )
                     covar_per_point = covar.diagonal(dim1=0, dim2=2).permute(2, 0, 1)
-                    covar_rescaled = normalizer.rescale_covariance(covar_per_point)
+                    covar_rescaled = normalizers[i].rescale_covariance(covar_per_point)
                     covar_preds[m, i] = covar_rescaled
 
         self.mean_preds = mean_preds
@@ -225,8 +230,8 @@ class LocalPolicyGP:
                         mean_preds[m, i, j] = preds_point.mean
                         covar_preds[m, i, j] = preds_point.covariance_matrix
 
-    def predict(self, x_test: Tensor, H: Tensor):
-        n_frames, n_dim, _ = H.shape
+    def predict(self, x_test: Tensor, H: Tensor, T: Tensor, t: int = 0):
+        n_frames, n_dim = T.shape
         mean_preds = torch.empty(n_frames, n_dim).clone()
         for m in range(n_frames):
             model = self.local_gps[m].model
@@ -235,12 +240,12 @@ class LocalPolicyGP:
             model.eval()
             likelihood.eval()
 
-            normalizer: DataNormalizer = model.normalizer
+            normalizers: Dict[int, DataNormalizer] = model.normalizers
             with torch.no_grad(), gpytorch.settings.fast_pred_var():
-                x: Tensor = H[m] @ x_test
-                x_norm = normalizer.normalize_inputs(x.unsqueeze(0))
+                x: Tensor = H[m] @ x_test + T[m]
+                x_norm = normalizers[t].normalize_inputs(x.unsqueeze(0))
                 local_preds = likelihood(model(x_norm))
-                global_preds = normalizer.denormalize_outputs(local_preds.mean)
+                global_preds = normalizers[t].denormalize_outputs(local_preds.mean)
                 mean_preds[m] = H[m].T @ global_preds.squeeze(0)
         return mean_preds
 
