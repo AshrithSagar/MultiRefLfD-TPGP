@@ -80,3 +80,9 @@ uv run lfd/run.py
 - Mariano Ramírez Montero, Giovanni Franzese, Jens Kober, and Cosimo Della Santina. Learning Multi-Reference Frame Skills from Demonstration with Task-Parameterized Gaussian Processes. In IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS), pp. 2832–2839, 2024.
 
 - <https://github.com/dfki-ric/movement_primitives>
+
+- <https://docs.gpytorch.ai/en/latest/examples/04_Variational_and_Approximate_GPs/SVGP_Regression_CUDA.html>
+
+- <https://docs.gpytorch.ai/en/latest/examples/04_Variational_and_Approximate_GPs/SVGP_Multitask_GP_Regression.html>
+
+- <https://docs.gpytorch.ai/en/latest/examples/04_Variational_and_Approximate_GPs/Natural_Gradient_Descent.html>
