@@ -4,7 +4,7 @@ version = "0.1.1"
 description = "Learning Multi-Reference Frame Skills from Demonstration with Task-Parameterized Gaussian Processes (TPGP)"
 readme = "README.md"
 license = { text = "MIT" }
-authors = [{ name = "Archana Kulkarni" }, {name = "Ashrith Sagar"}]
+authors = [{ name = "Archana Kulkarni" }, { name = "Ashrith Sagar" }]
 keywords = [
     "robotics",
     "imitation learning",
