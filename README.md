@@ -12,14 +12,26 @@ Learning Multi-Reference Frame Skills from Demonstration with Task-Parameterized
 
 ## Installation
 
-1. First, clone the repo.
+<details>
+
+<summary>Clone the repo</summary>
 
 ```shell
 git clone https://github.com/AshrithSagar/MultiRefLfD-TPGP
+cd MultiRefLfD-TPGP
 ```
 
-2. Install [`uv`](https://docs.astral.sh/uv/), if not already.
-   Check [here](https://docs.astral.sh/uv/getting-started/installation/) for installation instructions.
+</details>
+
+<details>
+
+<summary>Install uv</summary>
+
+Install [`uv`](https://docs.astral.sh/uv/), if not already.
+Check [here](https://docs.astral.sh/uv/getting-started/installation/) for installation instructions.
+
+It is recommended to use `uv`, as it will automatically install the dependencies in a virtual environment.
+If you don't want to use `uv`, skip to the next step.
 
 TL;DR: Just run
 
@@ -27,25 +39,12 @@ TL;DR: Just run
 curl -LsSf https://astral.sh/uv/install.sh | sh
 ```
 
-> [!TIP]
-> It is recommended to use `uv`, as it will automatically install the dependencies in a virtual environment.
-> If you don't want to use `uv`, skip to the next step.
+</details>
 
 The dependencies are listed in the [pyproject.toml](pyproject.toml) file.
 
-3. Install the package in editable mode (recommended).
-
-Using `uv`:
-
-```shell
-uv pip install -e .
-```
-
-With `pip`:
-
-```shell
-pip install -e .
-```
+Install the package in editable mode (recommended):
+`uv pip install -e .` OR `pip install -e .`
 
 ## Usage
 
