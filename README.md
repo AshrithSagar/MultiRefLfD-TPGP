@@ -44,7 +44,24 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 The dependencies are listed in the [pyproject.toml](pyproject.toml) file.
 
 Install the package in editable mode (recommended):
-`uv pip install -e .` OR `pip install -e .`
+
+```shell
+# Using uv
+uv pip install -e .
+
+# Or with pip
+pip install -e .
+```
+
+<details>
+
+<summary>Additional config</summary>
+
+```shell
+uv tool install bump-my-version
+```
+
+</details>
 
 ## Usage
 
