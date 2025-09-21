@@ -9,6 +9,7 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
 from deprecated import deprecated
+from matplotlib.axes import Axes
 from numpy.typing import NDArray
 from scipy.interpolate import interp1d
 from scipy.spatial.distance import cdist
@@ -22,7 +23,7 @@ def phi2index(dn: NDArray, phi: float) -> int:
     :param phi: Progress value
     :return: Index
     """
-    return np.argmin(np.abs(dn[:, 0] - phi))
+    return int(np.argmin(np.abs(dn[:, 0] - phi)))
 
 
 def resample_keypoint(dn, keyp_idx: int, align_idx: int) -> NDArray:
@@ -48,7 +49,7 @@ def resample_keypoint(dn, keyp_idx: int, align_idx: int) -> NDArray:
     )
     new_phi = np.maximum.accumulate(new_phi + eps * np.arange(n))
 
-    new_xi = interp1d(new_phi, xi, axis=0, kind="linear", fill_value="extrapolate")(phi)
+    new_xi = interp1d(new_phi, xi, axis=0, kind="linear")(phi)
     return np.column_stack((phi, new_xi))
 
 
@@ -158,7 +159,7 @@ def plot_keypoints(fdset: NDArray, P: Optional[NDArray] = None, alpha: float = 0
     cmap = mpl.colormaps["Set1"]
     colors = cmap(np.linspace(0, 1, n_frames))
     fig, ax = plt.subplots(1, n_dim - 1, figsize=(10, 5))
-    ax: List[plt.Axes]
+    ax: List[Axes]
 
     for d in range(n_dim - 1):
         for n in range(n_traj):
@@ -208,7 +209,7 @@ def plot_alignments(
     cmap = mpl.colormaps["Set1"]
     colors = cmap(np.linspace(0, 1, n_frames))
     fig, ax = plt.subplots(1, n_dim - 1, figsize=(10, 5))
-    ax: List[plt.Axes]
+    ax: List[Axes]
 
     for d in range(n_dim - 1):
         for n in range(n_traj):
