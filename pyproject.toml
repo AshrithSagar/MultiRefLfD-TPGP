@@ -35,7 +35,7 @@ dev = [
     "jupyter>=1.1.1",
     "jupyter-ruff>=0.3.1",
     "jupyterlab>=4.5.7",
-    "ruff>=0.15.12",
+    "ruff>=0.15.15",
 ]
 
 [project.optional-dependencies]
